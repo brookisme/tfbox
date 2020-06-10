@@ -1,8 +1,8 @@
 import random
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from image_kit.handler import InputTargetHandler
-
 
 
 BATCH_SIZE=6
@@ -17,41 +17,23 @@ class GroupedSeq(tf.keras.utils.Sequence):
             data,
             group_column=GROUP_COL,
             batch_size=BATCH_SIZE,
+            converters=None,
+            augment=True,
             shuffle=True,
             **handler_kwargs):
         self.batch_size=batch_size
+        self.augment=augment
         self.shuffle=shuffle
         self.group_column=group_column
-        self._init_dataset(data)
+        self._init_dataset(data,converters)
         self.handler=InputTargetHandler(**handler_kwargs)
-        
-
-    #
-    # Sequence inteface
-    #
-    def __len__(self):
-        """ number of batches """
-        return self.nb_batches
-    
-    
-    def __getitem__(self,batch_index):
-        """ return batch """
-        self.select_batch(batch_index)
-        inpts=np.array([self.get_input(r) for r in self.batch_rows])
-        targs=np.array([self.get_target(r) for r in self.batch_rows])
-        return inpts, targs
-    
-
-    def on_epoch_end(self):
-        """ on-epoch-end callback """
-        self.reset()
 
         
     #
     # PUBLIC
     #
     def select(self,index=None):
-        """ select single example """
+        """ select single example (w/o loading images) """
         if index is None:
             index=np.random.randint(0,len(self.idents))
         self.index=index
@@ -59,17 +41,9 @@ class GroupedSeq(tf.keras.utils.Sequence):
         self.matched_rows=self.data[self.data[self.group_column]==self.ident]
         self.row=self._sample_row(data=self.matched_rows)
 
-        
-    def get(self, index):
-        """ select, load, return single example """
-        self.select(index)
-        inpt=self.get_input()
-        targ=self.get_target()
-        return inpt, targ   
-    
-    
-    def select_batch(self,batch_index):
-        """ select batch """
+
+    def select_batch(self,batch_index,set_augment=True,set_window=True):
+        """ select batch (w/o loading images) """
         if batch_index>=self.nb_batches:
             raise ValueError(INDEX_ERROR.format(batch_index,self.nb_batches))
         self.batch_index=batch_index
@@ -77,6 +51,43 @@ class GroupedSeq(tf.keras.utils.Sequence):
         self.end_index=self.start_index+self.batch_size
         self.batch_idents=self.idents[self.start_index:self.end_index]
         self.batch_rows=[ self._sample_row(ident) for ident in self.batch_idents ]
+
+        
+    def get(self,index,set_window=True,set_augment=True):
+        """  returns single input-target pair 
+        
+        Args:
+            - batch_index<int>: batch index
+            - set_window/augment:
+                if false ignore any window-cropping or augmentation
+        """
+        self.select(index)
+        if set_window:
+            self.handler.set_window()
+        if set_augment:
+            self.handler.set_augmentation()
+        inpt=self.get_input()
+        targ=self.get_target()
+        return inpt, targ
+
+
+    def get_batch(self,batch_index,set_window=True,set_augment=True):
+        """ returns inputs-targets batch 
+        
+        Args:
+            - batch_index<int>: batch index
+            - set_window/augment:
+                if false ignore any window-cropping or augmentation
+                setup through `handler_kwargs`
+        """
+        self.select_batch(batch_index)
+        if set_window:
+            self.handler.set_window()
+        if set_augment:
+            self.handler.set_augmentation()
+        inpts=np.array([self.get_input(r) for r in self.batch_rows])
+        targs=np.array([self.get_target(r) for r in self.batch_rows])
+        return inpts, targs
 
     
     def get_input(self,row=None):
@@ -94,6 +105,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
 
         
     def reset(self):
+        """ reset loader properties. (optionally) shuffle dataset """
         self.index=0
         self.ident=None
         self.matched_rows=None
@@ -105,14 +117,32 @@ class GroupedSeq(tf.keras.utils.Sequence):
         self.batch_rows=None
         if self.shuffle:
             random.shuffle(self.idents)
+
+
+    #
+    # Sequence Interface
+    #
+    def __len__(self):
+        """ number of batches """
+        return self.nb_batches
     
     
+    def __getitem__(self,batch_index):
+        """ return input-target batch """
+        return get_batch(batch_index)
+    
+
+    def on_epoch_end(self):
+        """ on-epoch-end callback """
+        self.reset()
+
+
     #
     # INTERNAL
     #
-    def _init_dataset(self,data):
+    def _init_dataset(self,data,converters):
         if isinstance(data,str):
-            data=read_csv(data,converters=CONVERTERS)
+            data=pd.read_csv(data,converters=converters)
         self.data=data
         self.idents=data.loc[:,self.group_column].unique().tolist()
         self.nb_batches=int(len(self.idents)//self.batch_size)
