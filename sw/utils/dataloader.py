@@ -2,8 +2,8 @@ import random
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from tensorflow.keras.utils import to_categorical
 from image_kit.handler import InputTargetHandler
-
 
 BATCH_SIZE=6
 GROUP_COL='group_id'
@@ -15,12 +15,16 @@ class GroupedSeq(tf.keras.utils.Sequence):
 
     def __init__(self,
             data,
+            nb_categories,
             group_column=GROUP_COL,
             batch_size=BATCH_SIZE,
             converters=None,
             augment=True,
             shuffle=True,
+            onehot=False,
             **handler_kwargs):
+        self.onehot=onehot
+        self.nb_categories=nb_categories
         self.batch_size=batch_size
         self.augment=augment
         self.shuffle=shuffle
@@ -68,6 +72,8 @@ class GroupedSeq(tf.keras.utils.Sequence):
             self.handler.set_augmentation()
         inpt=self.get_input()
         targ=self.get_target()
+        if self.onehot:
+            targs=to_categorical(targs,num_classes=self.nb_categories)
         return inpt, targ
 
 
@@ -87,6 +93,8 @@ class GroupedSeq(tf.keras.utils.Sequence):
             self.handler.set_augmentation()
         inpts=np.array([self.get_input(r) for r in self.batch_rows])
         targs=np.array([self.get_target(r) for r in self.batch_rows])
+        if self.onehot:
+            targs=to_categorical(targs,num_classes=self.nb_categories)
         return inpts, targs
 
     
@@ -129,7 +137,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
     
     def __getitem__(self,batch_index):
         """ return input-target batch """
-        return get_batch(batch_index)
+        return self.get_batch(batch_index)
     
 
     def on_epoch_end(self):
