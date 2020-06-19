@@ -1,0 +1,99 @@
+import os
+import tensorflow as tf
+from sw.utils.dataloader import GroupedSeq
+from tf_toys.dataloader import FGenerator
+import sw.nn.dlv3p as dlv3p
+from tf_toys.model import segmentor
+import sw.nn.loss
+import sw.nn.optimizer
+#
+# CONSTANTS
+#
+SIZE=256
+NB_TOY_BATCHES=10
+DEFAULT_MODEL_NAME='dlv3p'
+DEFAULT_BACKBONE=dlv3p.XCEPTION
+DEFAULT_UPSAMPLE_MODE=dlv3p.UPSAMPLE_MODE
+KERNEL_SIZE=3
+OUT_KERNEL_SIZE=1
+SEGMENTOR_CHANNELS=[32,64,128]
+
+#
+# PUBLIC
+#
+def loader(
+        loader_name,
+        datasets,
+        batch_size,
+        in_ch,
+        out_ch,
+        onehot=False,
+        limit=None,
+        toy_size=SIZE,
+        nb_toy_batches=NB_TOY_BATCHES):
+    if loader_name=='toy':
+        if limit:
+            nb_batches=limit*batch_size
+        else:
+            nb_batches=nb_toy_batches
+        _loader=FGenerator(
+            shape=(batch_size,toy_size,toy_size,in_ch),
+            nb_cats=out_ch-1,
+            nb_batches=nb_batches,
+            onehot=onehot)
+    else:
+        _loader=GroupedSeq(
+            datasets,
+            nb_categories,
+            limit=limit,
+            onehot=onehot )
+    return _loader
+
+
+def callbacks(directory,folder,**kwargs):
+    tb=tf.keras.callbacks.TensorBoard(
+        os.path.join(directory,folder),
+        histogram_freq=1)
+    _callbacks=[tb]
+    return _callbacks
+
+
+def loss(loss_func,weights,**kwargs):
+    return sw.nn.loss.get(loss_func,weights,**kwargs)
+
+
+def optimizer(opt,**kwargs):
+    return sw.nn.optimizer.get(opt,**kwargs)
+
+
+def model(
+        model_name,
+        size,
+        in_ch,
+        out_ch,
+        backbone,
+        upsample_mode,
+        kernel_size,
+        out_kernel_size,
+        channels ):
+    model_name=model_name or DEFAULT_MODEL
+    if model_name=='dlv3p':
+        # TODO: backbone_kwargs: { } 
+        _model=dlv3p.DLV3p(
+            out_ch=out_ch,
+            backbone=backbone or DEFAULT_BACKBONE,
+            upsample_mode=upsample_mode or DEFAULT_UPSAMPLE_MODE )
+    else:
+        _model=segmentor(
+            out_ch=out_ch,
+            kernel_size=kernel_size or KERNEL_SIZE,
+            out_kernel_size=out_kernel_siz or OUT_KERNEL_SIZE,
+            channels=SEGMENTOR_CHANNELS )
+    _input=tf.keras.Input(shape=(size,size,in_ch),name='input')
+    return tf.keras.Model(_input, _model(_input))
+
+
+def metrics(metrics_list=None):
+    metrics_list=list(set(['accuracy']+metrics_list))
+    return metrics_list
+

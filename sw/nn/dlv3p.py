@@ -62,14 +62,14 @@ def upsample(x,upsample_mode,scale=None,like=None):
         interpolation=upsample_mode)(x)
 
 
-class SegModel(tf.keras.Model):
+class DLV3p(tf.keras.Model):
 
     def __init__(self,
             out_ch,
             backbone=XCEPTION,
             upsample_mode=UPSAMPLE_MODE,
             **backbone_kwargs):
-        super(SegModel, self).__init__()
+        super(DLV3p, self).__init__()
         self.out_ch=out_ch
         self.upsample_mode=upsample_mode
         self.backbone=get_backbone(backbone,**backbone_kwargs)
@@ -95,31 +95,31 @@ class SegModel(tf.keras.Model):
 
 
 
-class DLV3p(object):
+# class DLV3p(object):
 
 
-    def __init__(self,
-            backbone=XCEPTION,
-            upsample_mode=UPSAMPLE_MODE,
-            **backbone_kwargs):
-        self.backbone=get_backbone(backbone,**backbone_kwargs)
+#     def __init__(self,
+#             backbone=XCEPTION,
+#             upsample_mode=UPSAMPLE_MODE,
+#             **backbone_kwargs):
+#         self.backbone=get_backbone(backbone,**backbone_kwargs)
 
 
-    def __call__(self,inpt):
-        x,skips=self.backbone(inpt)
-        for skip in skips:
-            x=self._upsample(x,like=skip)
-            x=tf.concat([x,skip],axis=1)
-        x=self._upsample(x,like=inpt)
-        return x
+#     def __call__(self,inpt):
+#         x,skips=self.backbone(inpt)
+#         for skip in skips:
+#             x=self._upsample(x,like=skip)
+#             x=tf.concat([x,skip],axis=1)
+#         x=self._upsample(x,like=inpt)
+#         return x
 
 
-    def _upsample(self,x,scale=None,like=None):
-        if scale is None:
-            scale=int(like.shape[-2]/x.shape[-2])
-        return layers.UpSampling2D(
-            size=(scale,scale),
-            interpolation=self.upsample_mode)(x)
+#     def _upsample(self,x,scale=None,like=None):
+#         if scale is None:
+#             scale=int(like.shape[-2]/x.shape[-2])
+#         return layers.UpSampling2D(
+#             size=(scale,scale),
+#             interpolation=self.upsample_mode)(x)
 
 
 #

@@ -22,6 +22,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
             augment=True,
             shuffle=True,
             onehot=False,
+            limit=None,
             **handler_kwargs):
         self.onehot=onehot
         self.nb_categories=nb_categories
@@ -29,7 +30,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
         self.augment=augment
         self.shuffle=shuffle
         self.group_column=group_column
-        self._init_dataset(data,converters)
+        self._init_dataset(data,converters,limit)
         self.handler=InputTargetHandler(**handler_kwargs)
 
         
@@ -148,10 +149,12 @@ class GroupedSeq(tf.keras.utils.Sequence):
     #
     # INTERNAL
     #
-    def _init_dataset(self,data,converters):
+    def _init_dataset(self,data,converters,limit):
         if isinstance(data,str):
             data=pd.read_csv(data,converters=converters)
-        self.data=data
+        elif isinstance(data,list):
+            data=pd.concat([pd.read_csv(d,converters=converters) for d in data])
+        self.data=data.iloc[:limit]
         self.idents=data.loc[:,self.group_column].unique().tolist()
         self.nb_batches=int(len(self.idents)//self.batch_size)
         self.reset()
