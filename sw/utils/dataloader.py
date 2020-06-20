@@ -96,6 +96,9 @@ class GroupedSeq(tf.keras.utils.Sequence):
         targs=np.array([self.get_target(r) for r in self.batch_rows])
         if self.onehot:
             targs=to_categorical(targs,num_classes=self.nb_categories)
+        print('BOOM',inpts.shape,targs.shape)
+        print(inpts)
+        print(targs)
         return inpts, targs
 
     
@@ -150,12 +153,16 @@ class GroupedSeq(tf.keras.utils.Sequence):
     # INTERNAL
     #
     def _init_dataset(self,data,converters,limit):
+        print(data)
         if isinstance(data,str):
             data=pd.read_csv(data,converters=converters)
         elif isinstance(data,list):
             data=pd.concat([pd.read_csv(d,converters=converters) for d in data])
-        self.data=data.iloc[:limit]
         self.idents=data.loc[:,self.group_column].unique().tolist()
+        if limit:
+            self.idents=self.idents[:limit*self.batch_size]
+            data=data[data[self.group_column].isin(self.idents)]
+        self.data=data
         self.nb_batches=int(len(self.idents)//self.batch_size)
         self.reset()
         

@@ -2,7 +2,7 @@ import os
 import tensorflow as tf
 from sw.utils.dataloader import GroupedSeq
 from tf_toys.dataloader import FGenerator
-import sw.nn.dlv3p as dlv3p
+from sw.nn.dlv3p import DLV3p
 from tf_toys.model import segmentor
 import sw.nn.loss
 import sw.nn.optimizer
@@ -12,8 +12,6 @@ import sw.nn.optimizer
 SIZE=256
 NB_TOY_BATCHES=10
 DEFAULT_MODEL_NAME='dlv3p'
-DEFAULT_BACKBONE=dlv3p.XCEPTION
-DEFAULT_UPSAMPLE_MODE=dlv3p.UPSAMPLE_MODE
 KERNEL_SIZE=3
 OUT_KERNEL_SIZE=1
 SEGMENTOR_CHANNELS=[32,64,128]
@@ -44,7 +42,7 @@ def loader(
     else:
         _loader=GroupedSeq(
             datasets,
-            nb_categories,
+            out_ch,
             limit=limit,
             onehot=onehot )
     return _loader
@@ -79,10 +77,10 @@ def model(
     model_name=model_name or DEFAULT_MODEL
     if model_name=='dlv3p':
         # TODO: backbone_kwargs: { } 
-        _model=dlv3p.DLV3p(
+        _model=DLV3p(
             out_ch=out_ch,
-            backbone=backbone or DEFAULT_BACKBONE,
-            upsample_mode=upsample_mode or DEFAULT_UPSAMPLE_MODE )
+            backbone=backbone,
+            upsample_mode=upsample_mode )
     else:
         _model=segmentor(
             out_ch=out_ch,
