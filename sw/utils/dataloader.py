@@ -21,7 +21,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
 
     def __init__(self,
             data,
-            nb_categories,
+            nb_classes,
             batch_size=BATCH_SIZE,
             converters=None,
             augment=True,
@@ -38,7 +38,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
             size=None,
             example_path=None,
             **handler_kwargs):
-        self.nb_categories=nb_categories
+        self.nb_classes=nb_classes
         self.batch_size=batch_size
         self.augment=augment
         self.shuffle=shuffle
@@ -97,7 +97,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
         inpt=self.get_input()
         targ=self.get_target()
         if self.onehot:
-            targ=to_categorical(targ,num_classes=self.nb_categories)
+            targ=to_categorical(targ,num_classes=self.nb_classes)
         return inpt, np.expand_dims(targ,-1)
 
 
@@ -118,7 +118,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
         inpts=np.array([self.get_input(r) for r in self.batch_rows])
         targs=np.array([self.get_target(r) for r in self.batch_rows])
         if True: #self.onehot:
-            targs=to_categorical(targs,num_classes=self.nb_categories)
+            targs=to_categorical(targs,num_classes=self.nb_classes)
         return inpts, targs #np.expand_dims(targs,-1)
 
     

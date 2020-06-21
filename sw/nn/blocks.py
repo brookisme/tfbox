@@ -1,3 +1,4 @@
+import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.keras import activations
 #
@@ -35,9 +36,9 @@ def segment_classifier(out_ch,kernels=[3],act=None,act_config={},dilation_rate=1
     def _block(x,act=act,out_ch=out_ch):
         for k in kernels[:-1]: 
             print('conv',k,out_ch)
-            x=conv(out_ch,kernel_size=k,dilation_rate=dilation_rate)(x)
+            x=CBAD(out_ch,kernel_size=k,dilation_rate=dilation_rate)(x)
         print('conv',kernels[-1],out_ch)
-        x=conv(out_ch,kernel_size=kernels[-1],dilation_rate=dilation_rate,act=False)(x)
+        x=CBAD(out_ch,kernel_size=kernels[-1],dilation_rate=dilation_rate,act=False)(x)
         if act is None:
             if out_ch==1:
                 act='sigmoid'
@@ -49,43 +50,70 @@ def segment_classifier(out_ch,kernels=[3],act=None,act_config={},dilation_rate=1
     return _block
 
 
-def conv(
-        filters,
-        kernel_size=3,
-        padding='same',
-        seperable=False,
-        batch_norm=True,
-        act=True,
-        act_config={},
-        dilation_rate=1,
-        strides=1,
-        **conv_config):
-    """conv-bn-relu"""
-    if dilation_rate>1:
-        strides=1
-    if kernel_size in [1,(1,1)]:
-        dilation_rate=1
-    print('DR',filters,dilation_rate,strides)
-    def _block(x,strides=strides,dilation_rate=dilation_rate):
+
+DEFAULT_DROPOUT_RATE=0.5
+class CBAD(tf.keras.Model):
+    """ Conv-BatchNorm-Activation-Dropout
+
+    """
+    def __init__(self,
+            filters,
+            kernel_size=3,
+            padding='same',
+            seperable=False,
+            batch_norm=True,
+            act=True,
+            act_config={},
+            dilation_rate=1,
+            strides=1,
+            dropout=False,
+            dropout_config={},
+            act_last=False,
+            **conv_config):
+        super(CBAD, self).__init__()
         if seperable:
             _conv=layers.SeparableConv2D
         else:
             _conv=layers.Conv2D
-        # print('DR',conv_config.pop('dilation_rate','---'))
-        print('DR2',filters,dilation_rate)
-        x=_conv(
+        if dilation_rate>1:
+            strides=1
+        if kernel_size in [1,(1,1)]:
+            dilation_rate=1
+        self.conv=_conv(
             filters=filters,
             kernel_size=kernel_size,
             padding=padding,
             dilation_rate=dilation_rate,
             strides=strides,
-            **conv_config)(x)
+            **conv_config)
         if batch_norm:
-            x=layers.BatchNormalization()(x)
+            self.bn=layers.BatchNormalization()
+        else:
+            self.bn=False
         if act:
-            x=get_activation(act,**act_config)(x)
+            self.act=get_activation(act,**act_config)
+        else:
+            self.act=False
+        if dropout:
+            if dropout is True:
+                dropout=DEFAULT_DROPOUT_RATE
+            self.do=layers.Dropout(rate,**dropout_config)
+        else:
+            self.do=False
+        self.act_last=act_last
+
+
+    def __call__(self,x,training=False):
+        x=self.conv(x)
+        if self.bn: x=self.bn(x)
+        if self.act_last:
+            if training and self.do: x=self.do(x)
+            if self.act: x=self.act(x)
+        else:
+            if self.act: x=self.act(x)
+            if training and self.do: x=self.do(x)            
         return x
-    return _block
+
 
 
 
@@ -98,28 +126,28 @@ def sepres(name,filters,filters_in=None,dilation_rate=1,strides=2):
     def _block(x):
         print('SEPRES1',filters_in,dilation_rate)
 
-        res=conv(
+        res=CBAD(
             name=f'{name}-res',
             seperable=True,
             filters=filters,
             kernel_size=1,
             strides=strides,
             dilation_rate=dilation_rate)(x)
-        x=conv(
+        x=CBAD(
             name=f'{name}-b1',
             seperable=True,
             filters=filters_in,
             kernel_size=3,
             strides=1,
             dilation_rate=dilation_rate)(x)
-        x=conv(
+        x=CBAD(
             name=f'{name}-b2',
             seperable=True,
             filters=filters,
             kernel_size=3,
             strides=1,
             dilation_rate=dilation_rate)(x)
-        x=conv(
+        x=CBAD(
             name=f'{name}-b3',
             seperable=True,
             filters=filters,

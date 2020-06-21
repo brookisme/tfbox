@@ -1,5 +1,4 @@
 import tensorflow as tf
-from tensorflow import keras
 from tensorflow.keras import layers
 from . import xception as xcpt
 from . import blocks
@@ -55,7 +54,6 @@ class DLV3p(tf.keras.Model):
             classifier_act_config={},
             **backbone_kwargs):
         super(DLV3p, self).__init__()
-        print(nb_classes,'fORCING3')
         self.upsample_mode=upsample_mode or DLV3p.UPSAMPLE_MODE
         self.backbone=DLV3p.get_backbone(backbone,**backbone_kwargs)
         self.classifier=blocks.segment_classifier(

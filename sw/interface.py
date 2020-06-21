@@ -54,7 +54,7 @@ def loader(
     else:
         _loader=GroupedSeq(
             datasets,
-            nb_categories=nb_classes,
+            nb_classes=nb_classes,
             cropping=cropping,
             float_cropping=float_cropping,
             size=size,
@@ -90,7 +90,6 @@ def model(
         out_kernel_size,
         channels ):
     print('MODEL',in_ch,size)
-    # _model=Dumb(3,dilation_rate=2)
     model_name=model_name or DEFAULT_MODEL
     if model_name=='dlv3p':
         # TODO: backbone_kwargs: { } 
