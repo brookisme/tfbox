@@ -1,3 +1,5 @@
+import re
+import os
 import random
 import numpy as np
 import pandas as pd
@@ -8,7 +10,11 @@ from image_kit.handler import InputTargetHandler
 BATCH_SIZE=6
 GROUP_COL='group_id'
 INDEX_ERROR='requested batch {} of {} batches'
-
+STRIP_GS='surface-water-public/data/v1'
+DATA_ROOT='data'
+GS='gs://'
+INPUT_COL='s1_path'
+TARGET_COL='gsw_path'
 
 class GroupedSeq(tf.keras.utils.Sequence):
         
@@ -16,22 +22,39 @@ class GroupedSeq(tf.keras.utils.Sequence):
     def __init__(self,
             data,
             nb_categories,
-            group_column=GROUP_COL,
             batch_size=BATCH_SIZE,
             converters=None,
             augment=True,
             shuffle=True,
-            onehot=False,
             limit=None,
+            strip_gs=STRIP_GS,
+            data_root=DATA_ROOT,
+            input_column=INPUT_COL,
+            target_column=TARGET_COL,
+            group_column=GROUP_COL,
+            onehot=True,
+            cropping=None,
+            float_cropping=None,
+            size=None,
+            example_path=None,
             **handler_kwargs):
-        self.onehot=onehot
         self.nb_categories=nb_categories
         self.batch_size=batch_size
         self.augment=augment
         self.shuffle=shuffle
         self.group_column=group_column
+        self.input_column=input_column
+        self.target_column=target_column
+        self.strip_gs=strip_gs
+        self.onehot=onehot
+        self._set_data_root(data_root)
         self._init_dataset(data,converters,limit)
-        self.handler=InputTargetHandler(**handler_kwargs)
+        self.handler=InputTargetHandler(
+            cropping=cropping,
+            float_cropping=float_cropping,
+            size=512,
+            example_path=example_path,
+            **handler_kwargs)
 
         
     #
@@ -74,8 +97,8 @@ class GroupedSeq(tf.keras.utils.Sequence):
         inpt=self.get_input()
         targ=self.get_target()
         if self.onehot:
-            targs=to_categorical(targs,num_classes=self.nb_categories)
-        return inpt, targ
+            targ=to_categorical(targ,num_classes=self.nb_categories)
+        return inpt, np.expand_dims(targ,-1)
 
 
     def get_batch(self,batch_index,set_window=True,set_augment=True):
@@ -94,26 +117,23 @@ class GroupedSeq(tf.keras.utils.Sequence):
             self.handler.set_augmentation()
         inpts=np.array([self.get_input(r) for r in self.batch_rows])
         targs=np.array([self.get_target(r) for r in self.batch_rows])
-        if self.onehot:
+        if True: #self.onehot:
             targs=to_categorical(targs,num_classes=self.nb_categories)
-        print('BOOM',inpts.shape,targs.shape)
-        print(inpts)
-        print(targs)
-        return inpts, targs
+        return inpts, targs #np.expand_dims(targs,-1)
 
     
     def get_input(self,row=None):
         """ return input image for row or selected-row """
         if row is None:
             row=self.row
-        return self.handler.input(row.s1_path,return_profile=False)
+        return self.handler.input(row[self.input_column],return_profile=False)
     
     
     def get_target(self,row=None):
         """ return target image for row or selected-row """
         if row is None:
             row=self.row
-        return self.handler.target(row.gsw_path,return_profile=False)
+        return self.handler.target(row[self.target_column],return_profile=False)
 
         
     def reset(self):
@@ -153,7 +173,6 @@ class GroupedSeq(tf.keras.utils.Sequence):
     # INTERNAL
     #
     def _init_dataset(self,data,converters,limit):
-        print(data)
         if isinstance(data,str):
             data=pd.read_csv(data,converters=converters)
         elif isinstance(data,list):
@@ -162,15 +181,35 @@ class GroupedSeq(tf.keras.utils.Sequence):
         if limit:
             self.idents=self.idents[:limit*self.batch_size]
             data=data[data[self.group_column].isin(self.idents)]
+        if self.strip_gs:
+            data[self.input_column]=data[self.input_column].apply(self._localize_path)
+            data[self.target_column]=data[self.target_column].apply(self._localize_path)
         self.data=data
         self.nb_batches=int(len(self.idents)//self.batch_size)
         self.reset()
         
     
+    def _set_data_root(self,data_root):
+        if data_root is False:
+            self.data_root=''
+        elif isinstance(data_root,str):
+            self.data_root=data_root
+        else:
+            self.data_root=os.getcwd() 
+
+
     def _sample_row(self,ident=None,data=None):
         if data is None:
             data=self.data[self.data[self.group_column]==ident]
         return data.sample().iloc[0]
 
     
+    def _localize_path(self,path):
+        path=re.sub(f'^{GS}','',path)
+        if isinstance(self.strip_gs,str):
+            path=re.sub(f'^{self.strip_gs}',self.data_root,path)
+        return path
+
+
+
     

@@ -9,12 +9,21 @@ import sw.nn.optimizer
 #
 # CONSTANTS
 #
-SIZE=256
+SIZE=512
+CROPPING=None
+FLOAT_CROPPING=None
 NB_TOY_BATCHES=10
 DEFAULT_MODEL_NAME='dlv3p'
 KERNEL_SIZE=3
 OUT_KERNEL_SIZE=1
 SEGMENTOR_CHANNELS=[32,64,128]
+
+
+
+
+
+
+
 
 #
 # PUBLIC
@@ -28,6 +37,9 @@ def loader(
         onehot=False,
         limit=None,
         toy_size=SIZE,
+        cropping=CROPPING,
+        float_cropping=FLOAT_CROPPING,
+        size=SIZE,
         nb_toy_batches=NB_TOY_BATCHES):
     if loader_name=='toy':
         if limit:
@@ -40,9 +52,14 @@ def loader(
             nb_batches=nb_batches,
             onehot=onehot)
     else:
+        print(out_ch,'!!!!!!! forcing 3')
+        out_ch=3
         _loader=GroupedSeq(
             datasets,
-            out_ch,
+            nb_categories=out_ch,
+            cropping=cropping,
+            float_cropping=float_cropping,
+            size=size,
             limit=limit,
             onehot=onehot )
     return _loader
@@ -74,6 +91,8 @@ def model(
         kernel_size,
         out_kernel_size,
         channels ):
+    print('MODEL',in_ch,size)
+    # _model=Dumb(3,dilation_rate=2)
     model_name=model_name or DEFAULT_MODEL
     if model_name=='dlv3p':
         # TODO: backbone_kwargs: { } 
@@ -85,7 +104,7 @@ def model(
         _model=segmentor(
             out_ch=out_ch,
             kernel_size=kernel_size or KERNEL_SIZE,
-            out_kernel_size=out_kernel_siz or OUT_KERNEL_SIZE,
+            out_kernel_size=out_kernel_size or OUT_KERNEL_SIZE,
             channels=SEGMENTOR_CHANNELS )
     _input=tf.keras.Input(shape=(size,size,in_ch),name='input')
     return tf.keras.Model(_input, _model(_input))

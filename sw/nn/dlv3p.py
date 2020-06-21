@@ -10,9 +10,10 @@ BAND_AXIS=-1
 DEFAULT_BACKBONE='xception'
 
 
+
 #
 # Deeplab V3+
-#
+# #
 class DLV3p(tf.keras.Model):
     #
     # CONSTANTS
@@ -54,22 +55,30 @@ class DLV3p(tf.keras.Model):
             classifier_act_config={},
             **backbone_kwargs):
         super(DLV3p, self).__init__()
+        print(out_ch,'fORCING3')
+        out_ch=3
         self.upsample_mode=upsample_mode or DLV3p.UPSAMPLE_MODE
         self.backbone=DLV3p.get_backbone(backbone,**backbone_kwargs)
         self.classifier=blocks.segment_classifier(
             out_ch,
             kernels=classifier_kernels,
+            dilation_rate=2,
             act=classifier_act,
             act_config=classifier_act_config)
 
 
     def __call__(self, inputs, training=False):
+        print('BBONE',inputs.shape)
         x,skips=self.backbone(inputs)
+        print('UPS',x.shape,len(skips))
         for skip in skips:
             x=self._upsample(x,like=skip)
             x=tf.concat([x,skip],axis=BAND_AXIS)
         x=self._upsample(x,like=inputs)
-        return self.classifier(x)
+        print('classifier',x.shape)
+        x=self.classifier(x)
+        print('out',x.shape)
+        return x
 
 
     #
