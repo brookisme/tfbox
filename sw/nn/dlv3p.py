@@ -47,7 +47,7 @@ class DLV3p(tf.keras.Model):
     # PUBLIC
     #
     def __init__(self,
-            out_ch,
+            nb_classes,
             backbone=DEFAULT_BACKBONE,
             upsample_mode=UPSAMPLE_MODE,
             classifier_kernels=[3,1],
@@ -55,12 +55,11 @@ class DLV3p(tf.keras.Model):
             classifier_act_config={},
             **backbone_kwargs):
         super(DLV3p, self).__init__()
-        print(out_ch,'fORCING3')
-        out_ch=3
+        print(nb_classes,'fORCING3')
         self.upsample_mode=upsample_mode or DLV3p.UPSAMPLE_MODE
         self.backbone=DLV3p.get_backbone(backbone,**backbone_kwargs)
         self.classifier=blocks.segment_classifier(
-            out_ch,
+            nb_classes,
             kernels=classifier_kernels,
             dilation_rate=2,
             act=classifier_act,

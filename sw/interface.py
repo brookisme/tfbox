@@ -33,7 +33,7 @@ def loader(
         datasets,
         batch_size,
         in_ch,
-        out_ch,
+        nb_classes,
         onehot=False,
         limit=None,
         toy_size=SIZE,
@@ -48,15 +48,13 @@ def loader(
             nb_batches=nb_toy_batches
         _loader=FGenerator(
             shape=(batch_size,toy_size,toy_size,in_ch),
-            nb_cats=out_ch-1,
+            nb_cats=nb_classes-1,
             nb_batches=nb_batches,
             onehot=onehot)
     else:
-        print(out_ch,'!!!!!!! forcing 3')
-        out_ch=3
         _loader=GroupedSeq(
             datasets,
-            nb_categories=out_ch,
+            nb_categories=nb_classes,
             cropping=cropping,
             float_cropping=float_cropping,
             size=size,
@@ -85,7 +83,7 @@ def model(
         model_name,
         size,
         in_ch,
-        out_ch,
+        nb_classes,
         backbone,
         upsample_mode,
         kernel_size,
@@ -97,12 +95,12 @@ def model(
     if model_name=='dlv3p':
         # TODO: backbone_kwargs: { } 
         _model=DLV3p(
-            out_ch=out_ch,
+            nb_classes=nb_classes,
             backbone=backbone,
             upsample_mode=upsample_mode )
     else:
         _model=segmentor(
-            out_ch=out_ch,
+            nb_classes=nb_classes,
             kernel_size=kernel_size or KERNEL_SIZE,
             out_kernel_size=out_kernel_size or OUT_KERNEL_SIZE,
             channels=SEGMENTOR_CHANNELS )
