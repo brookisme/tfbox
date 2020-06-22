@@ -145,8 +145,6 @@ class CBADStack(keras.Model):
             act_last=False,
             **conv_config):
         super(CBADStack, self).__init__()
-        from pprint import pprint
-        pprint(conv_config)
         if output_stride not in [1,2]:
             raise NotImplemented
         if not filters_list:
@@ -177,8 +175,6 @@ class CBADStack(keras.Model):
             
 
     def __call__(self,x,training=False,**kwargs):
-        from pprint import pprint 
-        pprint(kwargs)
         if self.residual==CBADStack.IDENTITY:
             res=x
         elif self.residual:
@@ -257,12 +253,9 @@ class CBADStack(keras.Model):
 
 
 def segment_classifier(out_ch,kernels=[3],act=None,act_config={},dilation_rate=1):
-    print('OUT',out_ch,dilation_rate,kernels)
     def _block(x,act=act,out_ch=out_ch):
         for k in kernels[:-1]: 
-            print('conv',k,out_ch)
             x=CBAD(out_ch,kernel_size=k,dilation_rate=dilation_rate)(x)
-        print('conv',kernels[-1],out_ch)
         x=CBAD(out_ch,kernel_size=kernels[-1],dilation_rate=dilation_rate,act=False)(x)
         if act is None:
             if out_ch==1:
@@ -280,10 +273,7 @@ def segment_classifier(out_ch,kernels=[3],act=None,act_config={},dilation_rate=1
 def sepres(name,filters,filters_in=None,dilation_rate=1,strides=2):
     if not filters_in:
         filters_in=filters
-    print('SEPRES',filters_in,dilation_rate)
     def _block(x):
-        print('SEPRES1',filters_in,dilation_rate)
-
         res=CBAD(
             name=f'{name}-res',
             seperable=True,

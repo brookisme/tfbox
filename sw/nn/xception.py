@@ -23,39 +23,39 @@ def entry_flow(filters=[32,64,128]):
         x=blocks.CBAD(filters=filters[0],strides=2,name='in_conv1')(x)
         x=blocks.CBAD(filters=filters[1],name='in_conv2')(x)
         x=blocks.CBADStack(
-                filters=filters[2],
-                dilation_rate=1,
-                output_stride=2 )(x)
+            seperable=True,
+            filters=filters[2],
+            dilation_rate=1,
+            output_stride=2 )(x)
         return x
     return _block
 
 
-def middle_flow(filters=128,block_depth=1,depth=2,dilation_rate=1):
+def middle_flow(
+        filters=128,
+        flow_depth=8,
+        depth=3,
+        dilation_rate=1,
+        residual=blocks.CBADStack.IDENTITY ):
     def _block(x):
-        for b in range(depth):
-            x_in=x
-            for l in range(block_depth): 
-                print('MIDDLE',l,dilation_rate)
-                x=blocks.CBAD(
-                    name=f'middle-{b}-{l}',
-                    seperable=True,
-                    filters=filters,
-                    kernel_size=3,
-                    strides=1,
-                    dilation_rate=dilation_rate)(x)
-            x=layers.add([x_in, x])
+        for _ in range(flow_depth):
+            x=blocks.CBADStack(
+                seperable=True,
+                filters=filters,
+                dilation_rate=dilation_rate,
+                depth=depth,
+                residual=residual )(x)
         return x
     return _block
 
 
 def exit_flow(filters=[256,512,512,728],dilation_rate=2):
     def _block(x):
-        print('EXIT',dilation_rate)
-        x=blocks.sepres(
-            'exit-sepres-1',
+        x=blocks.CBADStack(
+            seperable=True,
             filters=filters[0],
-            filters_in=128,
-            dilation_rate=1)(x)
+            dilation_rate=dilation_rate,
+            output_stride=2 )(x)
         x=blocks.CBAD(
             name=f'exit-outconv-1',
             filters=filters[1],
