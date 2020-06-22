@@ -22,7 +22,11 @@ def entry_flow(filters=[32,64,128]):
     def _block(x):
         x=blocks.CBAD(filters=filters[0],strides=2,name='in_conv1')(x)
         x=blocks.CBAD(filters=filters[1],name='in_conv2')(x)
-        return blocks.sepres('entry-sep-1',filters[2],dilation_rate=1)(x)
+        x=blocks.CBADStack(
+                filters=filters[2],
+                dilation_rate=1,
+                output_stride=2 )(x)
+        return x
     return _block
 
 
