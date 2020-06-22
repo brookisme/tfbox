@@ -49,32 +49,29 @@ class DLV3p(tf.keras.Model):
             nb_classes,
             backbone=DEFAULT_BACKBONE,
             upsample_mode=UPSAMPLE_MODE,
-            classifier_kernels=[3,1],
+            classifier_kernel_size_list=[3,1],
+            classifier_filters_list=None,
             classifier_act=None,
             classifier_act_config={},
             **backbone_kwargs):
         super(DLV3p, self).__init__()
         self.upsample_mode=upsample_mode or DLV3p.UPSAMPLE_MODE
         self.backbone=DLV3p.get_backbone(backbone,**backbone_kwargs)
-        self.classifier=blocks.segment_classifier(
-            nb_classes,
-            kernels=classifier_kernels,
-            dilation_rate=2,
-            act=classifier_act,
-            act_config=classifier_act_config)
+        self.classifier=blocks.SegmentClassifier(
+            nb_classes=nb_classes,
+            filters_list=classifier_filters_list,
+            kernel_size_list=classifier_kernel_size_list,
+            output_act=classifier_act,
+            output_act_config=classifier_act_config)
 
 
     def __call__(self, inputs, training=False):
-        print('BBONE',inputs.shape)
         x,skips=self.backbone(inputs)
-        print('UPS',x.shape,len(skips))
         for skip in skips:
             x=self._upsample(x,like=skip)
             x=tf.concat([x,skip],axis=BAND_AXIS)
         x=self._upsample(x,like=inputs)
-        print('classifier',x.shape)
         x=self.classifier(x)
-        print('out',x.shape)
         return x
 
 

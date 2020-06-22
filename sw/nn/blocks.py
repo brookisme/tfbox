@@ -35,12 +35,14 @@ def get_activation(act,**config):
 
 
 #
-# BLOCKS
+# GENERAL BLOCKS 
 #
 class CBAD(keras.Model):
     """ Conv-BatchNorm-Activation-Dropout
-
     """
+    #
+    # PUBLIC
+    #
     def __init__(self,
             filters,
             kernel_size=3,
@@ -115,13 +117,21 @@ class CBAD(keras.Model):
 
 
 
+
+
 class CBADStack(keras.Model):
     """ (Res)Stack of CBAD Blocks
-
     """
-
+    #
+    # CONSTANTS
+    #
     IDENTITY='ident'
 
+
+
+    #
+    # PUBLIC
+    #
     def __init__(self,
             filters=None,
             kernel_size=3,
@@ -147,11 +157,14 @@ class CBADStack(keras.Model):
         super(CBADStack, self).__init__()
         if output_stride not in [1,2]:
             raise NotImplemented
+        if filters_list:
+            depth=len(filters_list)
+        elif kernel_size_list:
+            depth=len(kernel_size_list)
         if not filters_list:
-            if filters_out:
-                filters_list=[filters]*(depth-1)+[filters]
-            else:         
-                filters_list=[filters]*depth
+            if filters_out is None:
+                filters_out=filters
+            filters_list=[filters]*(depth-1)+[filters_out]
         if not kernel_size_list:
             kernel_size_list=[kernel_size]*depth
         self.filters_list=filters_list
@@ -186,6 +199,7 @@ class CBADStack(keras.Model):
         if res is not False:
             x=layers.add([res,x])
         return x
+
 
 
     #
@@ -252,56 +266,98 @@ class CBADStack(keras.Model):
 
 
 
-def segment_classifier(out_ch,kernels=[3],act=None,act_config={},dilation_rate=1):
-    def _block(x,act=act,out_ch=out_ch):
-        for k in kernels[:-1]: 
-            x=CBAD(out_ch,kernel_size=k,dilation_rate=dilation_rate)(x)
-        x=CBAD(out_ch,kernel_size=kernels[-1],dilation_rate=dilation_rate,act=False)(x)
-        if act is None:
-            if out_ch==1:
+
+
+
+
+#
+# PRE-CONFIGURED BLOCKS
+#
+class SegmentClassifier(keras.Model):
+    """
+    """
+    #
+    # CONSTANTS
+    #
+    AUTO='auto'
+
+
+
+    #
+    # PUBLIC
+    #
+    def __init__(self,
+            nb_classes,
+            depth=1,
+            filters=None,
+            filters_list=None,
+            kernel_size=3,
+            kernel_size_list=None,
+            output_act=None,
+            output_act_config={},
+            seperable_preclassification=False,
+            residual_preclassification=False,
+            **stack_config):
+        super(SegmentClassifier, self).__init__()
+        kernel_size_list=self._kernel_size_list(
+            kernel_size_list,
+            kernel_size,
+            depth)
+        filters_list=self._filters_list(
+            filters_list,
+            filters,
+            nb_classes,
+            len(kernel_size_list))
+        if len(filters_list)>1:
+            self.preclassifier=CBADStack(
+                filters_list=filters_list[:-1],
+                kernel_size_list=kernel_size_list[:-1],
+                seperable=seperable_preclassification,
+                residual=residual_preclassification,
+                **stack_config)
+        else:
+            self.preclassifier=False
+        self.classifier=CBAD(
+                filters=filters_list[-1],
+                kernel_size=kernel_size_list[-1],
+                act=self._activation(nb_classes,output_act),
+                act_config=output_act_config)
+
+
+
+    def __call__(self,x,training=False,**kwargs):
+        if self.preclassifier:
+            x=self.preclassifier(x)
+        return self.classifier(x)
+
+
+
+    #
+    # INTERNAL
+    #
+    def _filters_list(self,filters_list,filters,nb_classes,depth):
+        if filters_list:
+            if filters_list[-1]!=nb_classes:
+                raise ValueError('last filters value must equal nb_classes')
+        else:
+            if filters is None:
+                filters=nb_classes
+            filters_list=[filters]*(depth-1)+[nb_classes]
+        return filters_list
+
+
+    def _kernel_size_list(self,kernel_size_list,kernel_size,depth):
+        if not kernel_size_list:
+            kernel_size_list=[kernel_size]*depth
+        return kernel_size_list
+
+
+    def _activation(self,nb_classes,act):
+        if (act is None) or (act==SegmentClassifier.AUTO):
+            if nb_classes==1:
                 act='sigmoid'
             else:
                 act='softmax'
-        if act:
-            x=get_activation(act,**act_config)(x)
-        return x
-    return _block
+        return act
 
-
-
-
-def sepres(name,filters,filters_in=None,dilation_rate=1,strides=2):
-    if not filters_in:
-        filters_in=filters
-    def _block(x):
-        res=CBAD(
-            name=f'{name}-res',
-            seperable=True,
-            filters=filters,
-            kernel_size=1,
-            strides=strides,
-            dilation_rate=dilation_rate)(x)
-        x=CBAD(
-            name=f'{name}-b1',
-            seperable=True,
-            filters=filters_in,
-            kernel_size=3,
-            strides=1,
-            dilation_rate=dilation_rate)(x)
-        x=CBAD(
-            name=f'{name}-b2',
-            seperable=True,
-            filters=filters,
-            kernel_size=3,
-            strides=1,
-            dilation_rate=dilation_rate)(x)
-        x=CBAD(
-            name=f'{name}-b3',
-            seperable=True,
-            filters=filters,
-            kernel_size=3,
-            strides=strides,
-            dilation_rate=dilation_rate)(x)
-        return layers.add([res, x])
-    return _block
 
