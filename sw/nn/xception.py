@@ -45,14 +45,13 @@ class Xception(tf.keras.Model):
 
 
     def __call__(self,x,training=False,**kwargs):
-        x=self._process_stack(self.entry_stack,x)
-        skips=[x]
-        x=self._process_stack(self.middle_stack,x)
-        x=self._process_stack(self.exit_stack,x)
+        x,entry_skips=self._process_stack(self.entry_stack,x)
+        x=self._process_stack(self.middle_stack,x,False)
+        x,exit_skips=self._process_stack(self.exit_stack,x)
         if self.classifier:
             return self.classifier(x)
         else:
-            return x, skips
+            return x, entry_skips+exit_skips
 
 
 
@@ -60,7 +59,6 @@ class Xception(tf.keras.Model):
     # INTERNAL
     #
     def _entry_flow(self,prefilters,filters):
-        print('ENTRY')
         _layers=[ blocks.CBAD(filters=prefilters[0],strides=2) ]
         self.stride_manager.step()
         for f in prefilters[1:]:
@@ -76,7 +74,6 @@ class Xception(tf.keras.Model):
 
 
     def _middle_flow(self,filters,flow_depth,prev_filters):
-        print('MIDDLE')
         _layers=[]
         if filters==Xception.AUTO:
             filters=prev_filters
@@ -91,7 +88,6 @@ class Xception(tf.keras.Model):
 
 
     def _exit_flow(self,filters_in,filters,postfilters,prev_filters):
-        print('EXIT')
         if filters_in==Xception.AUTO:
             filters_in=prev_filters
         _layers=[]
@@ -111,10 +107,22 @@ class Xception(tf.keras.Model):
         return _layers, filters
 
 
-    def _process_stack(self,stack,x):
+    def _process_stack(self,stack,x,return_skips=True):
+        if return_skips:
+            skips=[]
         for layer in stack:
             x=layer(x)
-        return x
+            if return_skips:
+                skips=self._update_skips(skips,x)
+        if return_skips:
+            return x, skips
+        else:
+            return x
 
 
-
+    def _update_skips(self,skips,x):
+        try:
+            if (layer.keep_output): skips.append(x)
+        except:
+            pass
+        return skips

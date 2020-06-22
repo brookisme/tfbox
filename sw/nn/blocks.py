@@ -90,6 +90,7 @@ class CBAD(keras.Model):
             dropout=DEFAULT_DROPOUT,
             dropout_config={},
             act_last=False,
+            keep_output=False,
             **conv_config):
         super(CBAD, self).__init__()
         if seperable:
@@ -111,7 +112,8 @@ class CBAD(keras.Model):
         self.act=self._activation(act,act_config)
         self.do=self._dropout(dropout,dropout_config)
         self.act_last=act_last
-
+        self.keep_output=keep_output
+        
 
     def __call__(self,x,training=False):
         x=self.conv(x)
@@ -188,6 +190,7 @@ class CBADStack(keras.Model):
             dropout=DEFAULT_DROPOUT,
             dropout_config={},
             act_last=False,
+            keep_output=False,
             **conv_config):
         super(CBADStack, self).__init__()
         if output_stride not in [1,2]:
@@ -222,6 +225,7 @@ class CBADStack(keras.Model):
             self.filters_list[-1],
             output_stride)
         self.stack=self._build_stack(output_stride)
+        self.keep_output=keep_output
             
 
     def __call__(self,x,training=False,**kwargs):
