@@ -12,13 +12,13 @@ DEFAULT_BACKBONE='xception'
 
 #
 # Deeplab V3+
-# #
+# 
 class DLV3p(tf.keras.Model):
     #
     # CONSTANTS
     #
     BACKBONES={
-        'xception': xcpt.model,
+        'xception': xcpt.Xception,
         '.default': DEFAULT_BACKBONE
     }
     BILINEAR='bilinear'
