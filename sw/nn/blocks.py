@@ -8,7 +8,7 @@ DEFAULT_ACTIVATION='relu'
 DEFAULT_DROPOUT=False
 DEFAULT_DROPOUT_RATE=0.5
 DEFAULT_MAX_POOLING={
-    'pool_size': 2, 
+    'pool_size': 3, 
     'strides': 2, 
     'padding': "same"
 }
@@ -31,6 +31,40 @@ def get_activation(act,**config):
             act=ACTIVATIONS[act.lower()]
         act=act(**config)
     return act
+
+
+
+
+class StrideManager(object):
+
+
+    def __init__(self,output_stride):
+        self.output_stride=output_stride
+        self.reset()
+
+
+    def step(self):
+        self.stride_index+=1
+        self.current_output_stride=(2**self.stride_index)
+        if self.current_output_stride>=self.output_stride:
+            self.dilation_rate=(2**(self.stride_index-1))
+            self.strides=1
+            print('bboo',self.strides,self.dilation_rate)
+        else:
+            self.dilation_rate=1
+            self.strides=2
+            print('yys')
+
+
+    def reset(self):
+        self.stride_index=0
+        self.dilation_rate=1
+        self.strides=2
+        self.current_output_stride=1
+
+
+
+
 
 
 
@@ -136,6 +170,7 @@ class CBADStack(keras.Model):
             filters=None,
             kernel_size=3,
             depth=1,
+            filters_in=None,
             filters_out=None,
             filters_list=None,
             kernel_size_list=None,
@@ -161,14 +196,16 @@ class CBADStack(keras.Model):
             depth=len(filters_list)
         elif kernel_size_list:
             depth=len(kernel_size_list)
-        if not filters_list:
-            if filters_out is None:
-                filters_out=filters
-            filters_list=[filters]*(depth-1)+[filters_out]
-        if not kernel_size_list:
-            kernel_size_list=[kernel_size]*depth
-        self.filters_list=filters_list
-        self.kernel_size_list=kernel_size_list
+        self.filters_list=self._filters_list(
+            filters_list,
+            filters,
+            filters_in,
+            filters_out,
+            depth)
+        self.kernel_size_list=self._kernel_size_list(
+            kernel_size_list,
+            kernel_size,
+            depth)
         self._set_config(
             act,
             output_stride,
@@ -182,7 +219,7 @@ class CBADStack(keras.Model):
         self.residual=self._residual(
             residual,
             residual_act,
-            filters_list[-1],
+            self.filters_list[-1],
             output_stride)
         self.stack=self._build_stack(output_stride)
             
@@ -205,6 +242,31 @@ class CBADStack(keras.Model):
     #
     # INTERNAL
     #
+    def _filters_list(
+            self,
+            filters_list,
+            filters,
+            filters_in,
+            filters_out,
+            depth):
+        if not filters_list:
+            if depth==1:
+                filters_list=[filters]
+            else:
+                if filters_in is None:
+                    filters_in=filters            
+                if filters_out is None:
+                    filters_out=filters
+                filters_list=[filters_in]+([filters]*(depth-2))+[filters_out]
+        return filters_list
+
+
+    def _kernel_size_list(self,kernel_size_list,kernel_size,depth):
+        if not kernel_size_list:
+            kernel_size_list=[kernel_size]*depth
+        return kernel_size_list
+
+
     def _set_config(self,
             act,
             output_stride,
@@ -218,7 +280,6 @@ class CBADStack(keras.Model):
             max_pooling)
         shared_config['dilation_rate']=dilation_rate
         self.shared_config=shared_config
-
 
 
     def _max_pooling_config(self,output_stride,dilation_rate,max_pooling):
