@@ -14,6 +14,7 @@ CROPPING=None
 FLOAT_CROPPING=None
 NB_TOY_BATCHES=10
 DEFAULT_MODEL_NAME='dlv3p'
+DEFAULT_BACKBONE_CONFIG='small'
 KERNEL_SIZE=3
 OUT_KERNEL_SIZE=1
 SEGMENTOR_CHANNELS=[32,64,128]
@@ -81,28 +82,27 @@ def optimizer(opt,**kwargs):
 
 def model(
         model_name=DEFAULT_MODEL_NAME,
+        model_key_path=DLV3p.DEFAULT_KEY,
         size=None,
         in_ch=None,
         nb_classes=None,
-        backbone=DLV3p.DEFAULT_BACKBONE,
-        upsample_mode=DLV3p.BILINEAR,
         kernel_size=None,
         out_kernel_size=None,
         channels=None ):
     print('MODEL',in_ch,size)
     model_name=model_name or DEFAULT_MODEL_NAME
-    if model_name=='dlv3p':
-        # TODO: backbone_kwargs: { } 
-        _model=DLV3p(
-            nb_classes=nb_classes,
-            backbone=backbone,
-            upsample_mode=upsample_mode )
-    else:
+    if model_name=='toy':
         _model=segmentor(
             nb_classes=nb_classes,
             kernel_size=kernel_size or KERNEL_SIZE,
             out_kernel_size=out_kernel_size or OUT_KERNEL_SIZE,
-            channels=SEGMENTOR_CHANNELS )
+            channels=channels or SEGMENTOR_CHANNELS )
+    elif model_name=='dlv3p':
+        _model=DLV3p.from_config(
+            nb_classes=nb_classes,
+            key_path=model_key_path )
+    else:
+        raise NotImplemented
     _input=tf.keras.Input(shape=(size,size,in_ch),name='input')
     return tf.keras.Model(_input, _model(_input))
 

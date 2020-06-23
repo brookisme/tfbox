@@ -2,11 +2,14 @@ import tensorflow as tf
 from tensorflow.keras import layers
 from . import xception as xcpt
 from . import blocks
+from . import load
 #
 # CONSTANTS
 #
 BAND_AXIS=-1
-
+BACKBONES={
+    'xception':  { 'model': xcpt.Xception, 'config': 'xception.small' },
+}
 
 
 #
@@ -16,29 +19,44 @@ class DLV3p(tf.keras.Model):
     #
     # CONSTANTS
     #
-    DEFAULT_BACKBONE='xception'
-    BACKBONES={
-        'xception': xcpt.Xception,
-        '.default': DEFAULT_BACKBONE
-    }
-    BILINEAR='bilinear'
-    NEAREST='nearest'
-    UPSAMPLE_MODE=BILINEAR
-
-
-
+    DEFAULT_KEY='sw'
+    DEFAULTS=load.config(cfig='dlv3p',key_path=DEFAULT_KEY)
     #
     # STATIC
     #
     @staticmethod
-    def get_backbone(backbone=None,**kwargs):
-        if not backbone:
-            backbone=DLV3p.BACKBONES.get(
-                backbone,
-                DLV3p.BACKBONES.get(DLV3p.BACKBONES['.default']))
+    def from_config(
+            key_path=DEFAULT_KEY,
+            cfig='dlv3p',
+            is_file_path=False,
+            **kwargs):
+        config=load.config(
+            cfig=cfig,
+            key_path=key_path,
+            is_file_path=is_file_path,
+            **kwargs)
+        return DLV3p(**config)
+
+
+
+    @staticmethod
+    def build_backbone(backbone,**kwargs):
         if isinstance(backbone,str):
-            backbone=DLV3p.BACKBONES[backbone]
-        return backbone(**kwargs)
+            backbone=BACKBONES[backbone]
+        if isinstance(backbone,dict):
+            model=backbone['model']
+            cfig=backbone['config']
+            key_path=backbone.get('key_path')
+            is_file_path=backbone.get('is_file_path',False)
+            config=load.config(
+                cfig=cfig,
+                key_path=key_path,
+                is_file_path=is_file_path,
+                **kwargs)
+        else:
+            model=backbone
+            config=kwargs
+        return model(**config)
 
 
 
@@ -47,16 +65,16 @@ class DLV3p(tf.keras.Model):
     #
     def __init__(self,
             nb_classes,
-            backbone=DEFAULT_BACKBONE,
-            upsample_mode=UPSAMPLE_MODE,
-            classifier_kernel_size_list=[3,1],
-            classifier_filters_list=None,
-            classifier_act=None,
-            classifier_act_config={},
-            **backbone_kwargs):
+            backbone=DEFAULTS['backbone'],
+            backbone_kwargs=DEFAULTS.get('backbone_kwargs',{}),
+            upsample_mode=DEFAULTS['upsample_mode'],
+            classifier_kernel_size_list=DEFAULTS['classifier_kernel_size_list'],
+            classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
+            classifier_act=DEFAULTS.get('classifier_act'),
+            classifier_act_config=DEFAULTS.get('classifier_act_config',{})):
         super(DLV3p, self).__init__()
         self.upsample_mode=upsample_mode or DLV3p.UPSAMPLE_MODE
-        self.backbone=DLV3p.get_backbone(backbone,**backbone_kwargs)
+        self.backbone=DLV3p.build_backbone(backbone,**backbone_kwargs)
         self.classifier=blocks.SegmentClassifier(
             nb_classes=nb_classes,
             filters_list=classifier_filters_list,
@@ -67,7 +85,6 @@ class DLV3p(tf.keras.Model):
 
     def __call__(self, inputs, training=False):
         x,skips=self.backbone(inputs)
-        print('bOOM',x.shape,len(skips))
         for skip in skips:
             x=self._upsample(x,like=skip)
             x=tf.concat([x,skip],axis=BAND_AXIS)

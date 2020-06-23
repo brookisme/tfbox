@@ -194,7 +194,9 @@ class CBADStack(keras.Model):
             output_stride)
         self.stack=self._build_stack(output_stride)
         self.keep_output=keep_output
-
+        print("!!!!!",filters_list,kernel_size_list)
+        print("!!!!!",self.residual)
+        print("!!!>>>",self.stack)
 
 
     def __call__(self,x,training=False,**kwargs):

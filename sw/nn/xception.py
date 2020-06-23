@@ -1,9 +1,10 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-import sw.nn.blocks as blocks
 from sw.utils.helpers import StrideManager
-import sw.nn.load as load
+from . import blocks
+from . import load
+#
 #
 # CONSTANTS
 #
@@ -11,13 +12,16 @@ import sw.nn.load as load
 
 
 
+#
+# Xception Network:
+#
 class Xception(tf.keras.Model):
     #
     # CONSTANTS
     #
     AUTO='auto'
-    DEFAULT_CONFIG='small'
-    DEFAULTS=load.config(name='xception',key=DEFAULT_CONFIG)
+    DEFAULT_KEY='small'
+    DEFAULTS=load.config(cfig='xception',key_path=DEFAULT_KEY)
 
 
 
@@ -25,10 +29,17 @@ class Xception(tf.keras.Model):
     # STATIC
     #
     @staticmethod
-    def from_config(self,key=None,name='xception',is_file_path=False,**kwargs):
-        config=load.config(name,key=key,is_file_path=is_file_path,**kwargs)
+    def from_config(
+            key_path=DEFAULT_KEY,
+            cfig='xception',
+            is_file_path=False,
+            **kwargs):
+        config=load.config(
+            cfig=cfig,
+            key_path=key_path,
+            is_file_path=is_file_path,
+            **kwargs)
         return Xception(**config)
-
 
 
     #
@@ -91,6 +102,7 @@ class Xception(tf.keras.Model):
         for f in filters:
             _layers.append(blocks.CBADStack(
                     seperable=True,
+                    depth=3,
                     filters=f,
                     output_stride=self.stride_manager.strides,
                     dilation_rate=self.stride_manager.dilation_rate,
@@ -106,9 +118,9 @@ class Xception(tf.keras.Model):
         for _ in range(flow_depth):
             _layers.append(blocks.CBADStack(
                 seperable=True,
+                depth=3,
                 filters=filters,
                 dilation_rate=self.stride_manager.dilation_rate,
-                depth=flow_depth,
                 residual=blocks.CBADStack.IDENTITY ))
         return _layers, filters
 
@@ -119,6 +131,7 @@ class Xception(tf.keras.Model):
         _layers=[]
         _layers.append(blocks.CBADStack(
                 seperable=True,
+                depth=3,
                 filters=filters,
                 filters_in=filters_in,
                 output_stride=self.stride_manager.strides,
@@ -149,6 +162,7 @@ class Xception(tf.keras.Model):
 
     def _update_skips(self,skips,x):
         try:
+            tf.Print('!!!!!!!!!!!!!!!!!!',layer.keep_output,len(skips),x.shape)
             if (layer.keep_output): skips.append(x)
         except:
             pass

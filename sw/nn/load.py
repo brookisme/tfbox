@@ -14,15 +14,25 @@ JSON_RGX='.json$'
 #
 # I/0
 #
-def config(name,key=None,is_file_path=False,**kwargs):
-    if not is_file_path:
-        name=f'{CONFIGS_DIR}/{name}'
-    if re.search(JSON_RGX,name):
-        cfig=h.read_json(name)
-    else:
-        if not re.search(YAML_RGX,name):
-            name=f'{name}.yaml'
-        cfig=h.read_yaml(name)
-    if key:
-        cfig=cfig[key]
+def config(cfig,key_path=None,is_file_path=False,**kwargs):
+    if isinstance(cfig,str):
+        if not is_file_path:
+            parts=cfig.split('.')
+            name=parts[0]
+            key_path=key_path or parts[1:]
+            if isinstance(key_path,str):
+                key_path=[key_path]
+            cfig=f'{CONFIGS_DIR}/{name}.yaml'
+        if re.search(JSON_RGX,cfig):
+            cfig=h.read_json(cfig)
+        else:
+            cfig=h.read_yaml(cfig)
+    if key_path:
+        for k in key_path: cfig=cfig[k]
+    cfig.update(kwargs)
     return cfig
+
+
+
+
+

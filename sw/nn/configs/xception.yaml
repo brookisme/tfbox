@@ -1,5 +1,3 @@
-
-
 xception:
   output_stride: 16
   entry_flow_prefilters_stack: [32,64]

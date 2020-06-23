@@ -1,0 +1,9 @@
+dlv3p:
+  backbone: xception.xception
+  upsample_mode: bilinear
+  classifier_kernel_size_list: [3,1]
+
+sw:
+  backbone: xception
+  upsample_mode: bilinear
+  classifier_kernel_size_list: [3,1]
