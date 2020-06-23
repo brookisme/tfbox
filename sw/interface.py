@@ -1,11 +1,12 @@
 import os
 import tensorflow as tf
-from sw.utils.dataloader import GroupedSeq
+from sw.utils.dataloader import GroupedSeq, DATA_ROOT
 from tf_toys.dataloader import FGenerator
 from sw.nn.dlv3p import DLV3p
 from tf_toys.model import segmentor
 import sw.nn.loss
 import sw.nn.optimizer
+from sw.utils.tboard import TensorBoardBatchWriter
 #
 # CONSTANTS
 #
@@ -35,6 +36,7 @@ def loader(
         batch_size,
         in_ch,
         nb_classes,
+        data_root=DATA_ROOT,
         onehot=False,
         limit=None,
         toy_size=SIZE,
@@ -56,6 +58,8 @@ def loader(
         _loader=GroupedSeq(
             datasets,
             nb_classes=nb_classes,
+            data_root=data_root,
+            batch_size=batch_size,
             cropping=cropping,
             float_cropping=float_cropping,
             size=size,
@@ -64,12 +68,22 @@ def loader(
     return _loader
 
 
-def callbacks(directory,folder,**kwargs):
+def callbacks(loader,model,directory,folder,**kwargs):
+    path=os.path.join(directory,folder)
     tb=tf.keras.callbacks.TensorBoard(
-        os.path.join(directory,folder),
+        path,
+        profile_batch=0,
         histogram_freq=1)
-    _callbacks=[tb]
+    _callbacks=[tb,_temp_image_cb(path,loader,model)]
     return _callbacks
+
+
+
+def _temp_image_cb(data_dir,loader,model,batch_index=0):
+    tbbw=TensorBoardBatchWriter(data_dir=data_dir,loader=loader,model=model)
+    def lambda_func(epoch, logs):
+      tbbw.write_batch(batch_index,epoch=epoch)
+    return tf.keras.callbacks.LambdaCallback(on_epoch_end=lambda_func)
 
 
 def loss(loss_func,weights,**kwargs):

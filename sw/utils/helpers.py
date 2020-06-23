@@ -58,3 +58,4 @@ class StrideManager(object):
         self.strides=2
         self.current_output_stride=1
         self.is_strided=True
+
