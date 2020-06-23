@@ -14,6 +14,8 @@ DEFAULT_MAX_POOLING={
 }
 
 
+
+
 #
 # HELPERS
 #
@@ -31,40 +33,6 @@ def get_activation(act,**config):
             act=ACTIVATIONS[act.lower()]
         act=act(**config)
     return act
-
-
-
-
-class StrideManager(object):
-
-
-    def __init__(self,output_stride):
-        self.output_stride=output_stride
-        self.reset()
-
-
-    def step(self):
-        self.stride_index+=1
-        self.current_output_stride=(2**self.stride_index)
-        if self.current_output_stride>=self.output_stride:
-            self.dilation_rate=(2**(self.stride_index-1))
-            self.strides=1
-            print('bboo',self.strides,self.dilation_rate)
-        else:
-            self.dilation_rate=1
-            self.strides=2
-            print('yys')
-
-
-    def reset(self):
-        self.stride_index=0
-        self.dilation_rate=1
-        self.strides=2
-        self.current_output_stride=1
-
-
-
-
 
 
 
@@ -113,7 +81,7 @@ class CBAD(keras.Model):
         self.do=self._dropout(dropout,dropout_config)
         self.act_last=act_last
         self.keep_output=keep_output
-        
+
 
     def __call__(self,x,training=False):
         x=self.conv(x)
@@ -226,7 +194,8 @@ class CBADStack(keras.Model):
             output_stride)
         self.stack=self._build_stack(output_stride)
         self.keep_output=keep_output
-            
+
+
 
     def __call__(self,x,training=False,**kwargs):
         if self.residual==CBADStack.IDENTITY:

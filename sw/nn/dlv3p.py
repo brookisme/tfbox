@@ -6,7 +6,6 @@ from . import blocks
 # CONSTANTS
 #
 BAND_AXIS=-1
-DEFAULT_BACKBONE='xception'
 
 
 
@@ -17,6 +16,7 @@ class DLV3p(tf.keras.Model):
     #
     # CONSTANTS
     #
+    DEFAULT_BACKBONE='xception'
     BACKBONES={
         'xception': xcpt.Xception,
         '.default': DEFAULT_BACKBONE
@@ -67,6 +67,7 @@ class DLV3p(tf.keras.Model):
 
     def __call__(self, inputs, training=False):
         x,skips=self.backbone(inputs)
+        print('bOOM',x.shape,len(skips))
         for skip in skips:
             x=self._upsample(x,like=skip)
             x=tf.concat([x,skip],axis=BAND_AXIS)

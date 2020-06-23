@@ -2,6 +2,11 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import sw.nn.blocks as blocks
+from sw.utils.helpers import StrideManager
+import sw.nn.load as load
+#
+# CONSTANTS
+#
 
 
 
@@ -11,6 +16,18 @@ class Xception(tf.keras.Model):
     # CONSTANTS
     #
     AUTO='auto'
+    DEFAULT_CONFIG='small'
+    DEFAULTS=load.config(name='xception',key=DEFAULT_CONFIG)
+
+
+
+    #
+    # STATIC
+    #
+    @staticmethod
+    def from_config(self,key=None,name='xception',is_file_path=False,**kwargs):
+        config=load.config(name,key=key,is_file_path=is_file_path,**kwargs)
+        return Xception(**config)
 
 
 
@@ -18,17 +35,17 @@ class Xception(tf.keras.Model):
     # PUBLIC
     #
     def __init__(self,
-            output_stride=8,
-            entry_flow_prefilters_stack=[32,64],
-            entry_flow_filters_stack=[128,256,728],
-            middle_flow_filters=AUTO,
-            middle_flow_depth=16,
-            exit_flow_filters_in=AUTO,
-            exit_flow_filters=1024,
-            exit_flow_postfilters_stack=[1536,1536,2048],
-            classifier=False):
+            output_stride=DEFAULTS['output_stride'],
+            entry_flow_prefilters_stack=DEFAULTS['entry_flow_prefilters_stack'],
+            entry_flow_filters_stack=DEFAULTS['entry_flow_filters_stack'],
+            middle_flow_filters=DEFAULTS['middle_flow_filters'],
+            middle_flow_depth=DEFAULTS['middle_flow_depth'],
+            exit_flow_filters_in=DEFAULTS['exit_flow_filters_in'],
+            exit_flow_filters=DEFAULTS['exit_flow_filters'],
+            exit_flow_postfilters_stack=DEFAULTS['exit_flow_postfilters_stack'],
+            classifier=DEFAULTS.get('classifier',False)):
         super(Xception, self).__init__()
-        self.stride_manager=blocks.StrideManager(output_stride)
+        self.stride_manager=StrideManager(output_stride)
         self.entry_stack, filters_out=self._entry_flow(
             entry_flow_prefilters_stack,
             entry_flow_filters_stack)
@@ -59,16 +76,25 @@ class Xception(tf.keras.Model):
     # INTERNAL
     #
     def _entry_flow(self,prefilters,filters):
-        _layers=[ blocks.CBAD(filters=prefilters[0],strides=2) ]
+        _layers=[ blocks.CBAD(
+            filters=prefilters[0],
+            strides=self.stride_manager.strides,
+            dilation_rate=self.stride_manager.dilation_rate,
+            keep_output=self.stride_manager.is_strided) ]
         self.stride_manager.step()
         for f in prefilters[1:]:
-            _layers.append( blocks.CBAD(filters=f) )
-        for f in filters[1:]:
+            _layers.append( blocks.CBAD(
+                filters=f,
+                strides=self.stride_manager.strides,
+                dilation_rate=self.stride_manager.dilation_rate,
+                keep_output=self.stride_manager.is_strided) )
+        for f in filters:
             _layers.append(blocks.CBADStack(
                     seperable=True,
                     filters=f,
+                    output_stride=self.stride_manager.strides,
                     dilation_rate=self.stride_manager.dilation_rate,
-                    output_stride=self.stride_manager.strides ))
+                    keep_output=self.stride_manager.is_strided ))
             self.stride_manager.step()
         return _layers, filters[-1]
 
@@ -95,8 +121,9 @@ class Xception(tf.keras.Model):
                 seperable=True,
                 filters=filters,
                 filters_in=filters_in,
+                output_stride=self.stride_manager.strides,
                 dilation_rate=self.stride_manager.dilation_rate,
-                output_stride=self.stride_manager.strides ))
+                keep_output=self.stride_manager.is_strided ))
         self.stride_manager.step()
         for f in postfilters:
             _layers.append( blocks.CBAD(filters=f) )

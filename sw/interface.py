@@ -80,17 +80,17 @@ def optimizer(opt,**kwargs):
 
 
 def model(
-        model_name,
-        size,
-        in_ch,
-        nb_classes,
-        backbone,
-        upsample_mode,
-        kernel_size,
-        out_kernel_size,
-        channels ):
+        model_name=DEFAULT_MODEL_NAME,
+        size=None,
+        in_ch=None,
+        nb_classes=None,
+        backbone=DLV3p.DEFAULT_BACKBONE,
+        upsample_mode=DLV3p.BILINEAR,
+        kernel_size=None,
+        out_kernel_size=None,
+        channels=None ):
     print('MODEL',in_ch,size)
-    model_name=model_name or DEFAULT_MODEL
+    model_name=model_name or DEFAULT_MODEL_NAME
     if model_name=='dlv3p':
         # TODO: backbone_kwargs: { } 
         _model=DLV3p(
