@@ -7,7 +7,7 @@ xception:
   exit_flow_filters_in: auto
   exit_flow_filters: 1024
   exit_flow_postfilters_stack: [1536,1536,2048]
-
+  keep_mid_step: true
 
 small:
   output_stride: 4
@@ -18,3 +18,4 @@ small:
   exit_flow_filters_in: auto
   exit_flow_filters: 256
   exit_flow_postfilters_stack: [512,512]
+  keep_mid_step: true

@@ -54,9 +54,14 @@ class Xception(tf.keras.Model):
             exit_flow_filters_in=DEFAULTS['exit_flow_filters_in'],
             exit_flow_filters=DEFAULTS['exit_flow_filters'],
             exit_flow_postfilters_stack=DEFAULTS['exit_flow_postfilters_stack'],
-            classifier=DEFAULTS.get('classifier',False)):
+            classifier=DEFAULTS.get('classifier',False),
+            keep_mid_step=DEFAULTS.get('keep_mid_step',True),
+            skip_indices=DEFAULTS.get('skip_indices',True)):
         super(Xception, self).__init__()
-        self.stride_manager=StrideManager(output_stride)
+        self.stride_manager=StrideManager(
+            output_stride,
+            keep_mid_step=keep_mid_step,
+            keep_indices=skip_indices)
         self.entry_stack, filters_out=self._entry_flow(
             entry_flow_prefilters_stack,
             entry_flow_filters_stack)
@@ -91,7 +96,7 @@ class Xception(tf.keras.Model):
             filters=prefilters[0],
             strides=self.stride_manager.strides,
             dilation_rate=self.stride_manager.dilation_rate,
-            keep_output=self.stride_manager.is_strided) ]
+            keep_output=self.stride_manager.keep_index) ]
         self.stride_manager.step()
         for f in prefilters[1:]:
             _layers.append(blocks.CBAD(
@@ -104,7 +109,7 @@ class Xception(tf.keras.Model):
                     filters=f,
                     output_stride=self.stride_manager.strides,
                     dilation_rate=self.stride_manager.dilation_rate,
-                    keep_output=self.stride_manager.is_strided ))
+                    keep_output=self.stride_manager.keep_index ))
             self.stride_manager.step()
         return _layers, filters[-1]
 

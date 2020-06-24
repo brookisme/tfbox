@@ -72,6 +72,13 @@ class DLV3p(tf.keras.Model):
             aspp_cfig_key_path=DEFAULTS.get('aspp_cfig_key_path','aspp'),
             aspp_cfig=DEFAULTS.get('aspp_cfig','blocks'),
             aspp_kwargs=DEFAULTS.get('aspp_kwargs',{}),
+            backbone_reducer_filters=DEFAULTS.get(
+                'backbone_reducer_filters',
+                None),
+            backbone_reducer_kernel_size=DEFAULTS.get(
+                'backbone_reducer_kernel_size',
+                None),
+            backbone_reducer_config=DEFAULTS.get('backbone_reducer_config',{}),
             upsample_mode=DEFAULTS['upsample_mode'],
             classifier_kernel_size_list=DEFAULTS['classifier_kernel_size_list'],
             classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
@@ -85,6 +92,10 @@ class DLV3p(tf.keras.Model):
             aspp_cfig_key_path,
             aspp_cfig,
             aspp_kwargs)
+        self.backbone_reducer=self._backbone_reducer(
+            backbone_reducer_filters,
+            backbone_reducer_kernel_size,
+            backbone_reducer_config)
         self.classifier=blocks.SegmentClassifier(
             nb_classes=nb_classes,
             filters_list=classifier_filters_list,
@@ -97,6 +108,8 @@ class DLV3p(tf.keras.Model):
         x,skips=self.backbone(inputs)
         if self.aspp:
             x=self.aspp(x)
+        elif self.backbone_reducer:
+            x=self.backbone_reducer(x)
         skips.reverse()
         for skip in skips:
             x=blocks.upsample(x,like=skip)
@@ -121,8 +134,15 @@ class DLV3p(tf.keras.Model):
                     **config)
 
 
-
-
+    def _backbone_reducer(self,
+            filters,
+            kernel_size,
+            config):
+        if filters:
+            return CBAD(
+                    filters=filters,
+                    kernel_size=kernel_size,
+                    **(config or {}))
 
 
 

@@ -1,4 +1,5 @@
 import os
+import math
 import yaml
 
 
@@ -36,8 +37,12 @@ def read_json(path,*key_path):
 class StrideManager(object):
 
 
-    def __init__(self,output_stride):
+    def __init__(self,output_stride,keep_mid_step=False,keep_indices=True):
         self.output_stride=output_stride
+        self.strided_steps=round(math.log2(output_stride))
+        self.keep_mid_step=keep_mid_step
+        self.mid_step_index=int(math.floor((self.strided_steps-1)/2))
+        self.keep_indices=keep_indices
         self.reset()
 
 
@@ -49,7 +54,9 @@ class StrideManager(object):
             self.dilation_index+=1
             self.dilation_rate=(2**(self.dilation_index))
             self.strides=1
-
+            self.keep_index=False
+        else:
+            self.keep_index=self._keep_index()
 
     def reset(self):
         self.stride_index=0
@@ -58,4 +65,15 @@ class StrideManager(object):
         self.strides=2
         self.current_output_stride=1
         self.is_strided=True
+        self.keep_index=self._keep_index()
+
+
+    def _keep_index(self):
+        if self.keep_mid_step:
+            return self.stride_index==self.mid_step_index
+        elif isinstance(self.keep_indices,list):
+            return self.stride_index in self.keep_indices
+        else:
+            return self.keep_indices
+
 

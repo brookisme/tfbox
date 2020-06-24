@@ -2,9 +2,14 @@ dlv3p:
   backbone: xception
   upsample_mode: bilinear
   classifier_kernel_size_list: [3,1]
+  aspp: true
+  backbone_reducer_filters: false
+  backbone_reducer_kernel_size: false
 
 sw:
   backbone: xception_small
   upsample_mode: bilinear
   classifier_kernel_size_list: [3,1]
   aspp: false
+  backbone_reducer_filters: 256
+  backbone_reducer_kernel_size: 1

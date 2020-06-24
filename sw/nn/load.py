@@ -19,7 +19,7 @@ def config(cfig,key_path=None,is_file_path=False,**kwargs):
         if not is_file_path:
             parts=cfig.split('.')
             name=parts[0]
-            key_path=key_path or parts[1:]
+            key_path=key_path or parts[1:] or name
             if isinstance(key_path,str):
                 key_path=[key_path]
             cfig=f'{CONFIGS_DIR}/{name}.yaml'
