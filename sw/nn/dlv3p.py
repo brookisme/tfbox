@@ -67,6 +67,10 @@ class DLV3p(tf.keras.Model):
             nb_classes,
             backbone=DEFAULTS['backbone'],
             backbone_kwargs=DEFAULTS.get('backbone_kwargs',{}),
+            aspp=DEFAULTS.get('aspp',True),
+            aspp_cfig_key_path=DEFAULTS.get('aspp_cfig_key_path','aspp'),
+            aspp_cfig=DEFAULTS.get('aspp_cfig','blocks'),
+            aspp_kwargs=DEFAULTS.get('aspp_kwargs',{}),
             upsample_mode=DEFAULTS['upsample_mode'],
             classifier_kernel_size_list=DEFAULTS['classifier_kernel_size_list'],
             classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
@@ -75,6 +79,11 @@ class DLV3p(tf.keras.Model):
         super(DLV3p, self).__init__()
         self.upsample_mode=upsample_mode or DLV3p.UPSAMPLE_MODE
         self.backbone=DLV3p.build_backbone(backbone,**backbone_kwargs)
+        self.aspp=self._aspp(
+            aspp,
+            aspp_cfig_key_path,
+            aspp_cfig,
+            aspp_kwargs)
         self.classifier=blocks.SegmentClassifier(
             nb_classes=nb_classes,
             filters_list=classifier_filters_list,
@@ -85,10 +94,12 @@ class DLV3p(tf.keras.Model):
 
     def __call__(self, inputs, training=False):
         x,skips=self.backbone(inputs)
+        if self.aspp:
+            x=self.aspp(x)
         for skip in skips:
             x=self._upsample(x,like=skip)
             x=tf.concat([x,skip],axis=BAND_AXIS)
-        x=self._upsample(x,like=inputs)
+        x=blocks.upsample(x,like=inputs,interpolation=self.upsample_mode)
         x=self.classifier(x)
         return x
 
@@ -96,12 +107,18 @@ class DLV3p(tf.keras.Model):
     #
     # INTERNAL
     #
-    def _upsample(self,x,scale=None,like=None):
-        if scale is None:
-            scale=int(like.shape[-2]/x.shape[-2])
-        return layers.UpSampling2D(
-            size=(scale,scale),
-            interpolation=self.upsample_mode)(x)
+    def _aspp(self,
+            aspp,
+            cfig_key_path,
+            cfig,
+            config):
+        if aspp:
+            return blocks.ASPP(
+                    cfig_key_path=cfig_key_path,
+                    cfig=cfig,
+                    **config)
+
+
 
 
 

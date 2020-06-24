@@ -1,6 +1,8 @@
+import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
 from tensorflow.keras import activations
+from . import load
 #
 # CONSTANTS
 #
@@ -12,6 +14,7 @@ DEFAULT_MAX_POOLING={
     'strides': 2, 
     'padding': "same"
 }
+DEFAULT_GLOBAL_POOLING='average'
 
 
 
@@ -34,6 +37,15 @@ def get_activation(act,**config):
         act=act(**config)
     return act
 
+
+def upsample(x,scale=None,like=None,shape=None,interpolation='bilinear'):
+        if scale is None:
+            if shape is None:
+                shape=like.shape
+            scale=int(shape[-2]/x.shape[-2])
+        return layers.UpSampling2D(
+            size=(scale,scale),
+            interpolation=interpolation)(x)
 
 
 #
@@ -155,14 +167,11 @@ class CBADStack(keras.Model):
             strides=1,
             output_stride=1,
             max_pooling=False,
-            dropout=DEFAULT_DROPOUT,
-            dropout_config={},
-            act_last=False,
             keep_output=False,
             **conv_config):
         super(CBADStack, self).__init__()
         if output_stride not in [1,2]:
-            raise NotImplemented
+            raise NotImplementedError('output_stride must be 1 or 2')
         if filters_list:
             depth=len(filters_list)
         elif kernel_size_list:
@@ -194,9 +203,6 @@ class CBADStack(keras.Model):
             output_stride)
         self.stack=self._build_stack(output_stride)
         self.keep_output=keep_output
-        print("!!!!!",filters_list,kernel_size_list)
-        print("!!!!!",self.residual)
-        print("!!!>>>",self.stack)
 
 
     def __call__(self,x,training=False,**kwargs):
@@ -304,11 +310,198 @@ class CBADStack(keras.Model):
 
 
 
+class CBADGroup(keras.Model):
+    """ (Res)Parallel Group of CBAD Blocks
+    """
+    #
+    # CONSTANTS
+    #
+    IDENTITY='ident'
+
+
+
+    #
+    # PUBLIC
+    #
+    def __init__(self,
+            filters,
+            hidden_filters=None,
+            kernel_size_list=[1,3,3],
+            kernel_size_out=1,
+            dilation_rate_list=[1,6,12],
+            global_pooling=False,
+            residual=True,
+            residual_act=True,
+            seperable=False,
+            batch_norm=True,
+            act=True,
+            act_config={},
+            act_last=False,
+            padding='same',
+            out_config={},
+            keep_output=False,
+            **conv_config):
+        super(CBADGroup, self).__init__()
+        if padding is not 'same':
+            raise NotImplementedError('currently only accepts padding=same')
+        self._set_config(
+                kernel_size_list,
+                dilation_rate_list,
+                filters,
+                hidden_filters,
+                act,
+                act_config,
+                padding=padding,
+                **conv_config)
+        self.residual=self._residual(residual,residual_act)
+        self.pooling_stack=self._global_pooling(global_pooling)
+        self.group=self._build_group()
+        self.out_conv=self._out_conv(kernel_size_out,out_config)
+        self.keep_output=keep_output
+
+
+    def __call__(self,x,training=False,**kwargs):
+        if self.residual==CBADGroup.IDENTITY:
+            res=x
+        elif self.residual:
+            res=self.residual(x)
+        else:
+            res=False
+        x=self._call_group(x)
+        if self.out_conv:
+            x=self.out_conv(x)
+        if res is not False:
+            x=layers.add([res,x])
+        return x
+
+
+
+    #
+    # INTERNAL
+    #
+    def _call_group(self,x):
+        _x=[]
+        for layer in self.group:
+            _x.append(layer(x))
+        if self.pooling_stack:
+            shape=x.shape
+            for layer in self.pooling_stack:
+                x=layer(x)
+            x=upsample(x,shape=shape)
+            _x.append(x)
+        return layers.Concatenate()(_x) 
+
+
+    def _set_config(self,
+            kernel_size_list,
+            dilation_rate_list,
+            filters,
+            hidden_filters,
+            act,
+            act_config,
+            **shared_config):
+        self.kernel_size_list=kernel_size_list
+        self.dilation_rate_list=dilation_rate_list
+        self.filters=filters
+        if not hidden_filters:
+            hidden_filters=filters
+        self.hidden_filters=hidden_filters
+        self.act=act
+        self.act_config=act_config
+        self.shared_config=shared_config
+
+
+    def _global_pooling(self,global_pooling):
+        if not global_pooling:
+            return False
+        else:
+            if global_pooling is True:
+                global_pooling=DEFAULT_GLOBAL_POOLING
+            _layers=[]
+            if global_pooling in ['max','gmp','global_max_pooling']:
+                _layers.append(layers.GlobalMaxPooling2D())
+            else:
+                _layers.append(layers.GlobalAveragePooling2D())
+            _layers.append(layers.Lambda(
+                lambda x:  tf.expand_dims(tf.expand_dims(x, axis=1),axis=1)
+            ))
+            _layers.append(layers.Conv2D(
+                filters=self.hidden_filters,
+                kernel_size=1, 
+                strides=1,
+                use_bias=False
+            ))
+            return _layers
+
+
+    def _residual(self,residual,residual_act):
+        if residual and (residual!=CBADStack.IDENTITY):
+            if not residual_act:
+                act=False
+            else:
+                act=self.act
+            residual=CBAD(
+                filters=self.hidden_filters,
+                kernel_size=1,
+                act=act,
+                act_config=self.act_config
+                **self.shared_config)
+        return residual
+
+    
+    def _build_group(self):
+        _layers=[] 
+        for i,(k,d) in enumerate(zip(self.kernel_size_list,self.dilation_rate_list)):
+            _layers.append(CBAD(
+                filters=self.hidden_filters,
+                kernel_size=k,
+                dilation_rate=d,
+                act=self.act,
+                act_config=self.act_config,
+                **self.shared_config))
+        return _layers       
+
+
+    def _out_conv(self,kernel_size,out_config):
+        if self.filters:
+            config=self.shared_config.copy()
+            config['act']=self.act
+            config['act_config']=self.act_config
+            config.update(out_config)
+            return CBAD(
+                filters=self.filters,
+                kernel_size=kernel_size,
+                **config)
+
 
 
 #
 # PRE-CONFIGURED BLOCKS
 #
+class ASPP(CBADGroup):
+    """ ASPP (convenience wrapper for CBADGroup)
+    """
+    #
+    # CONSTANTS
+    #
+    IDENTITY='ident'
+
+
+
+    #
+    # PUBLIC
+    #
+    def __init__(self,
+            cfig_key_path='aspp',
+            cfig='blocks',
+            **kwargs):
+        config=load.config(cfig=cfig,key_path=cfig_key_path)
+        config.update(kwargs)
+        super(ASPP, self).__init__(**config)
+
+
+
+
 class SegmentClassifier(keras.Model):
     """
     """

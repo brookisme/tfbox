@@ -1,0 +1,14 @@
+aspp:
+  filters: 256
+  hidden_filters: null
+  kernel_size_list: [1,3,3,3]
+  kernel_size_out: 1
+  dilation_rate_list: [1,6,12,18]
+  global_pooling: 'average'
+  residual: False
+  residual_act: True
+  seperable: True
+  batch_norm: True
+  act: True
+  act_config: {}
+
