@@ -159,6 +159,7 @@ class CBADStack(keras.Model):
             padding='same',
             residual=True,
             residual_act=True,
+            seperable_residual=False,
             seperable=False,
             batch_norm=True,
             act=True,
@@ -192,6 +193,7 @@ class CBADStack(keras.Model):
             dilation_rate,
             max_pooling,
             seperable=seperable,
+            seperable_residual=seperable_residual,
             batch_norm=batch_norm,
             padding=padding,
             act_config=act_config,
@@ -253,12 +255,16 @@ class CBADStack(keras.Model):
             output_stride,
             dilation_rate,
             max_pooling,
+            seperable,
+            seperable_residual,
             **shared_config):
         self.act=act
         self.max_pooling_config=self._max_pooling_config(
             output_stride,
             dilation_rate,
             max_pooling)
+        self.seperable=seperable
+        self.seperable_residual=seperable_residual
         shared_config['dilation_rate']=dilation_rate
         self.shared_config=shared_config
 
@@ -282,6 +288,7 @@ class CBADStack(keras.Model):
                 filters=filters,
                 kernel_size=1,
                 strides=output_stride,
+                seperable=self.seperable_residual,
                 act=act,
                 **self.shared_config)
         return residual
@@ -300,6 +307,7 @@ class CBADStack(keras.Model):
                 filters=f,
                 kernel_size=k,
                 strides=strides,
+                seperable=self.seperable,
                 act=self.act,
                 **self.shared_config))
             if (i==last_layer_index) and self.max_pooling_config:
