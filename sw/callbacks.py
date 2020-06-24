@@ -21,11 +21,11 @@ class TBSegmentationImages(keras.callbacks.Callback):
             ax_w=None,
             ax_delta=0.2,
             preserve_epoch=5,
-            sample_batch_length=10,
+            sample_batch_indices=None,
             sample_batch_index=None):
         super(TBSegmentationImages,self).__init__()
         self.sample_batch_index=sample_batch_index
-        self.sample_batch_indices=list(range(sample_batch_length))
+        self.sample_batch_indices=sample_batch_indices or list(range(len(loader)))
         self.siw=SegmentationImageWriter(
             data_dir=data_dir,
             loader=loader,
