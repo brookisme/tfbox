@@ -96,8 +96,7 @@ class Xception(tf.keras.Model):
         for f in prefilters[1:]:
             _layers.append(blocks.CBAD(
                 filters=f,
-                dilation_rate=self.stride_manager.dilation_rate,
-                keep_output=self.stride_manager.is_strided) )
+                dilation_rate=self.stride_manager.dilation_rate) )
         for f in filters:
             _layers.append(blocks.CBADStack(
                     seperable=True,
@@ -135,7 +134,7 @@ class Xception(tf.keras.Model):
                 filters_in=filters_in,
                 output_stride=self.stride_manager.strides,
                 dilation_rate=self.stride_manager.dilation_rate,
-                keep_output=self.stride_manager.is_strided ))
+                keep_output=False ))
         self.stride_manager.step()
         for f in postfilters:
             _layers.append(blocks.CBAD(
@@ -155,17 +154,17 @@ class Xception(tf.keras.Model):
         for layer in stack:
             x=layer(x)
             if return_skips:
-                skips=self._update_skips(skips,x)
+                skips=self._update_skips(layer,skips,x)
         if return_skips:
             return x, skips
         else:
             return x
 
 
-    def _update_skips(self,skips,x):
+    def _update_skips(self,layer,skips,x,force_update=False):
         try:
-            tf.Print('!!!!!!!!!!!!!!!!!!',layer.keep_output,len(skips),x.shape)
-            if (layer.keep_output): skips.append(x)
+            if force_update or (layer.keep_output): 
+                skips.append(x)
         except:
             pass
         return skips

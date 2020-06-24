@@ -39,13 +39,13 @@ def get_activation(act,**config):
 
 
 def upsample(x,scale=None,like=None,shape=None,interpolation='bilinear'):
-        if scale is None:
-            if shape is None:
-                shape=like.shape
-            scale=int(shape[-2]/x.shape[-2])
-        return layers.UpSampling2D(
-            size=(scale,scale),
-            interpolation=interpolation)(x)
+    if scale is None:
+        if shape is None:
+            shape=like.shape
+        scale=int(shape[-2]/x.shape[-2])
+    return layers.UpSampling2D(
+        size=(scale,scale),
+        interpolation=interpolation)(x)
 
 
 #

@@ -97,8 +97,9 @@ class DLV3p(tf.keras.Model):
         x,skips=self.backbone(inputs)
         if self.aspp:
             x=self.aspp(x)
+        skips.reverse()
         for skip in skips:
-            x=self._upsample(x,like=skip)
+            x=blocks.upsample(x,like=skip)
             x=tf.concat([x,skip],axis=BAND_AXIS)
         x=blocks.upsample(x,like=inputs,interpolation=self.upsample_mode)
         x=self.classifier(x)
