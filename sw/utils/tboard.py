@@ -10,13 +10,13 @@ import io
 #
 INPUT_BANDS=[1]
 TARGET_COLORS=['#ff0000','#fafafa','#0000aa']
-class TensorBoardBatchWriter(object):
+class SegmentationImageWriter(object):
     
     def __init__(self,
             data_dir,
             loader,
             model=None,
-            input_bands=[0],
+            input_bands=INPUT_BANDS,
             target_colors=TARGET_COLORS,
             vmin=0,
             vmax=None,
@@ -119,31 +119,6 @@ class TensorBoardBatchWriter(object):
             tf.summary.image(name,image,step=0,description=description)
 
 
-
-
-
-
-
-
-#
-# CALLBACK
-#
-# class TensorBoardImage(keras.callbacks.Callback):
-#     def __init__(self, tag):
-#         super().__init__() 
-#         self.tag = tag
-
-#     def on_epoch_end(self, epoch, logs={}):
-#         # Load image
-#         img = data.astronaut()
-#         # Do something to the image
-#         img = (255 * skimage.util.random_noise(img)).astype('uint8')
-
-#         image = make_image(img)
-#         summary = tf.Summary(value=[tf.Summary.Value(tag=self.tag, image=image)])
-#         writer = tf.summary.FileWriter('./logs')
-#         writer.add_summary(summary, epoch)
-#         writer.close()
 
 
 
