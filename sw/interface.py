@@ -97,7 +97,6 @@ def model(
         kernel_size=None,
         out_kernel_size=None,
         channels=None ):
-    print('MODEL',model_name,model_key_path)
     model_name=model_name or DEFAULT_MODEL_NAME
     if model_name=='toy':
         _model=segmentor(

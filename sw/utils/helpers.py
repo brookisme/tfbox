@@ -40,9 +40,7 @@ class StrideManager(object):
     def __init__(self,output_stride,keep_mid_step=False,keep_indices=True):
         self.output_stride=output_stride
         self.strided_steps=round(math.log2(output_stride))
-        self.keep_mid_step=keep_mid_step
-        self.mid_step_index=int(math.floor((self.strided_steps-1)/2))
-        self.keep_indices=keep_indices
+        self._set_keepers(keep_mid_step,keep_indices)
         self.reset()
 
 
@@ -69,11 +67,21 @@ class StrideManager(object):
 
 
     def _keep_index(self):
-        if self.keep_mid_step:
-            return self.stride_index==self.mid_step_index
-        elif isinstance(self.keep_indices,list):
+        if isinstance(self.keep_indices,list):
             return self.stride_index in self.keep_indices
         else:
             return self.keep_indices
 
+
+    def _set_keepers(self,keep_mid_step,keep_indices):
+        if keep_mid_step:
+            self.keep_indices=[keep_mid_step]
+        else:
+            self.keep_indices=keep_indices
+        if self.keep_indices is True:
+            self.nb_keepers=self.strided_steps
+        elif self.keep_indices:
+            self.nb_keepers=len(self.keep_indices)
+        else:
+            self.nb_keepers=0
 

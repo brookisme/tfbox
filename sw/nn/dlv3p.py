@@ -79,6 +79,12 @@ class DLV3p(tf.keras.Model):
                 'backbone_reducer_kernel_size',
                 None),
             backbone_reducer_config=DEFAULTS.get('backbone_reducer_config',{}),
+            skip_reducer_filters_list=DEFAULTS.get('skip_reducer_filters_list',None),
+            skip_reducer_filters=DEFAULTS.get('skip_reducer_filters',128),
+            nb_skips=DEFAULTS.get('nb_skips',None),
+            up_refinements_filters_list=DEFAULTS.get('up_refinements_filters_list',None),
+            up_refinements_filters=DEFAULTS.get('up_refinements_filters',256),
+            up_refinements_depth=DEFAULTS.get('up_refinements_depth',2),
             upsample_mode=DEFAULTS['upsample_mode'],
             classifier_kernel_size_list=DEFAULTS['classifier_kernel_size_list'],
             classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
@@ -87,15 +93,23 @@ class DLV3p(tf.keras.Model):
         super(DLV3p, self).__init__()
         self.upsample_mode=upsample_mode or DLV3p.UPSAMPLE_MODE
         self.backbone=DLV3p.build_backbone(backbone,**backbone_kwargs)
+        self.nb_skips=self._nb_skips(nb_skips)
         self.aspp=self._aspp(
             aspp,
             aspp_cfig_key_path,
             aspp_cfig,
             aspp_kwargs)
-        self.backbone_reducer=self._backbone_reducer(
+        self.backbone_reducer=self._get_conv(
             backbone_reducer_filters,
             backbone_reducer_kernel_size,
             backbone_reducer_config)
+        self.skip_reducers=self._skip_reducers(
+                skip_reducer_filters_list,
+                skip_reducer_filters)
+        self.up_refinements=self._up_refinements(
+            up_refinements_filters_list,
+            up_refinements_filters,
+            up_refinements_depth)
         self.classifier=blocks.SegmentClassifier(
             nb_classes=nb_classes,
             filters_list=classifier_filters_list,
@@ -111,9 +125,13 @@ class DLV3p(tf.keras.Model):
         elif self.backbone_reducer:
             x=self.backbone_reducer(x)
         skips.reverse()
-        for skip in skips:
-            x=blocks.upsample(x,like=skip)
-            x=tf.concat([x,skip],axis=BAND_AXIS)
+        for s, reducer, refines in zip(skips,self.skip_reducers,self.up_refinements):
+            x=blocks.upsample(x,like=s)
+            if reducer:
+                s=reducer(s)
+            x=tf.concat([x,s],axis=BAND_AXIS)
+            for rfine in refines:
+                x=rfine(x)
         x=blocks.upsample(x,like=inputs,interpolation=self.upsample_mode)
         x=self.classifier(x)
         return x
@@ -122,6 +140,18 @@ class DLV3p(tf.keras.Model):
     #
     # INTERNAL
     #
+    def _nb_skips(self,nb_skips):
+        if not nb_skips:
+            try:
+                nb_skips=self.backbone.stride_manager.nb_keepers
+            except:
+                pass
+        if nb_skips:
+            return nb_skips
+        else:
+            return 0
+
+
     def _aspp(self,
             aspp,
             cfig_key_path,
@@ -134,12 +164,43 @@ class DLV3p(tf.keras.Model):
                     **config)
 
 
-    def _backbone_reducer(self,
+    def _skip_reducers(self,
+                filters_list,
+                filters):
+        if not filters_list:
+            if filters and self.nb_skips:
+                filters_list=[filters]*self.nb_skips
+        if filters_list:
+            _reducers=[self._get_conv(f) for f in filters_list]
+        else:
+            _reducers=[False for _ in range(self.nb_skips)]
+        return _reducers
+
+
+    def _up_refinements(self,
+                filters_list,
+                filters,
+                depth):
+        if not filters_list:
+            if filters and self.nb_skips:
+                filters_list=[filters]*self.nb_skips
+        if filters_list:
+            _refinements=[self._get_refinements(f,depth) for f in filters_list]
+        else:
+            _refinements=[False for _ in range(self.nb_skips)]
+        return _refinements
+
+
+    def _get_refinements(self,filters,depth):
+        return [ self._get_conv(filters,kernel_size=3) for _ in range(depth) ]
+
+
+    def _get_conv(self,
             filters,
-            kernel_size,
-            config):
+            kernel_size=1,
+            config={}):
         if filters:
-            return CBAD(
+            return blocks.CBAD(
                     filters=filters,
                     kernel_size=kernel_size,
                     **(config or {}))
