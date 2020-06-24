@@ -8,7 +8,8 @@ from . import load
 #
 BAND_AXIS=-1
 BACKBONES={
-    'xception':  { 'model': xcpt.Xception, 'config': 'xception.small' },
+    'xception':  { 'model': xcpt.Xception, 'config': 'xception' },
+    'xception_small':  { 'model': xcpt.Xception, 'config': 'xception.small' },
 }
 
 

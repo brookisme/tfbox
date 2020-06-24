@@ -94,9 +94,8 @@ class Xception(tf.keras.Model):
             keep_output=self.stride_manager.is_strided) ]
         self.stride_manager.step()
         for f in prefilters[1:]:
-            _layers.append( blocks.CBAD(
+            _layers.append(blocks.CBAD(
                 filters=f,
-                strides=self.stride_manager.strides,
                 dilation_rate=self.stride_manager.dilation_rate,
                 keep_output=self.stride_manager.is_strided) )
         for f in filters:
@@ -139,7 +138,10 @@ class Xception(tf.keras.Model):
                 keep_output=self.stride_manager.is_strided ))
         self.stride_manager.step()
         for f in postfilters:
-            _layers.append( blocks.CBAD(filters=f) )
+            _layers.append(blocks.CBAD(
+                filters=f,
+                seperable=True,
+                dilation_rate=self.stride_manager.dilation_rate))
         if postfilters:
             filters=postfilters[-1]
         else:

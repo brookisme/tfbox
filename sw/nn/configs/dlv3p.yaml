@@ -1,9 +1,10 @@
 dlv3p:
-  backbone: xception.xception
+  backbone: xception
   upsample_mode: bilinear
   classifier_kernel_size_list: [3,1]
 
 sw:
-  backbone: xception
+  backbone: xception_small
   upsample_mode: bilinear
   classifier_kernel_size_list: [3,1]
+  aspp: false
