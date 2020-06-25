@@ -11,6 +11,7 @@ import sw.callbacks
 # CONSTANTS
 #
 SIZE=512
+TOY_SIZE=256
 CROPPING=None
 FLOAT_CROPPING=None
 NB_TOY_BATCHES=10
@@ -37,18 +38,20 @@ def loader(
         in_ch,
         nb_classes,
         data_root=DATA_ROOT,
-        onehot=False,
+        onehot=True,
         limit=None,
-        toy_size=SIZE,
+        toy_size=TOY_SIZE,
         cropping=CROPPING,
         float_cropping=FLOAT_CROPPING,
         size=SIZE,
         nb_toy_batches=NB_TOY_BATCHES):
-    if loader_name=='toy':
+    print('LOADER',loader_name)
+    if loader_name=='fgen':
         if limit:
             nb_batches=limit*batch_size
         else:
             nb_batches=nb_toy_batches
+        print('FGenerator',(batch_size,toy_size,toy_size,in_ch),onehot)
         _loader=FGenerator(
             shape=(batch_size,toy_size,toy_size,in_ch),
             nb_cats=nb_classes-1,
