@@ -13,12 +13,15 @@ setup(
   url = 'https://github.com/brookisme/surface_water',
   download_url = 'https://github.com/brookisme/surface_water/tarball/0.1',
   keywords = ['python','tensorflow','model'],
-  include_package_data=True,
+  include_package_data=False,
   data_files=[
     (
       'config',[]
     )
   ],
+  package_data={
+    'sw.nn': ['configs/*.yaml']
+  },
   classifiers = [],
   entry_points={
       'console_scripts': [
