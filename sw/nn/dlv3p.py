@@ -22,6 +22,8 @@ class DLV3p(tf.keras.Model):
     #
     DEFAULT_KEY='sw'
     DEFAULTS=load.config(cfig='dlv3p',key_path=DEFAULT_KEY)
+    BEFORE_UP='before'
+    AFTER_UP='after'
     #
     # STATIC
     #
@@ -86,6 +88,7 @@ class DLV3p(tf.keras.Model):
             up_refinements_filters=DEFAULTS.get('up_refinements_filters',256),
             up_refinements_depth=DEFAULTS.get('up_refinements_depth',2),
             upsample_mode=DEFAULTS['upsample_mode'],
+            classifier_position=DEFAULTS.get('classifier_position',BEFORE_UP),
             classifier_kernel_size_list=DEFAULTS['classifier_kernel_size_list'],
             classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
             classifier_act=DEFAULTS.get('classifier_act'),
@@ -94,6 +97,7 @@ class DLV3p(tf.keras.Model):
         self.upsample_mode=upsample_mode or DLV3p.UPSAMPLE_MODE
         self.backbone=DLV3p.build_backbone(backbone,**backbone_kwargs)
         self.nb_skips=self._nb_skips(nb_skips)
+        self.classifier_position=classifier_position
         self.aspp=self._aspp(
             aspp,
             aspp_cfig_key_path,
@@ -132,8 +136,11 @@ class DLV3p(tf.keras.Model):
             x=tf.concat([x,s],axis=BAND_AXIS)
             for rfine in refines:
                 x=rfine(x)
+        if self.classifier_position==DLV3p.BEFORE_UP:
+            x=self.classifier(x)
         x=blocks.upsample(x,like=inputs,interpolation=self.upsample_mode)
-        x=self.classifier(x)
+        if self.classifier_position==DLV3p.AFTER_UP:
+            x=self.classifier(x)
         return x
 
 
