@@ -10,6 +10,15 @@ import io
 #
 INPUT_BANDS=[1]
 TARGET_COLORS=['#ff0000','#fafafa','#0000aa']
+DESCRIPTION_HEAD="""
+    * epoch: {}
+    * batch_index: {}
+    * image_index: {}
+"""
+DESCRIPTION_HIST="""{}
+    * {}: 
+    {}
+"""
 class SegmentationImageWriter(object):
     
     def __init__(self,
@@ -60,7 +69,8 @@ class SegmentationImageWriter(object):
         for i,(inpt,targ) in enumerate(zip(inpts,targs)):
             inpt,targ=self._process_input_target(inpt,targ)
             figim=self._get_figure_image(inpt,targ)
-            self._save_figue_image(batch_index,i,figim,epoch)
+            targ_hist=self._get_hist(targ)
+            self._save_figue_image(batch_index,i,figim,epoch,target_hist=targ_hist)
 
         
     def _save_inputs_targets_predictions(self,batch_index,inpts,targs,preds,epoch):
@@ -68,7 +78,15 @@ class SegmentationImageWriter(object):
             inpt,targ=self._process_input_target(inpt,targ)
             pred=self._process_prediction(pred)
             figim=self._get_figure_image(inpt,targ,pred)
-            self._save_figue_image(batch_index,i,figim,epoch)
+            targ_hist=self._get_hist(targ)
+            pred_hist=self._get_hist(pred)
+            self._save_figue_image(
+                batch_index,
+                i,
+                figim,
+                epoch,
+                target_hist=targ_hist,
+                prediction_hist=pred_hist)
             
             
     def _process_input_target(self,inpt,targ):
@@ -84,6 +102,12 @@ class SegmentationImageWriter(object):
     def _process_prediction(self,pred):
         return pred.astype(np.uint8)
     
+
+    def _get_hist(self,cat_im):
+        values,counts=np.unique(cat_im,return_counts=True)
+        hist={ v: c for v,c in zip(values,counts) }
+        return { v: hist.get(v,0) for v in range(self.vmin,self.vmax+1) }
+
     
     def _get_figure_image(self,inpt,targ,pred=None):
         if pred is None:
@@ -105,16 +129,23 @@ class SegmentationImageWriter(object):
         return image
 
     
-    def _save_figue_image(self,batch_index,image_index,image,epoch=None):
+    def _save_figue_image(self,
+            batch_index,
+            image_index,
+            image,
+            epoch=None,
+            target_hist=None,
+            prediction_hist=None):
         if not ((epoch is None) or (epoch%self.preserve_epoch)):
             name=f'epoch_{epoch}: batch_{batch_index}-image_{image_index}'
         else:
             name=f'batch_{batch_index}-image_{image_index}'
-        description=f"""        
-        * epoch: {epoch}
-        * batch_index: {batch_index}
-        * image_index: {image_index}
-        """
+
+        description=DESCRIPTION_HEAD.format(epoch,batch_index,image_index)       
+        if target_hist:
+            description=DESCRIPTION_HIST.format(description,'target',target_hist)
+        if prediction_hist:
+            description=DESCRIPTION_HIST.format(description,'prediction',prediction_hist)
         with self.file_writer.as_default():
             tf.summary.image(name,image,step=0,description=description)
 
