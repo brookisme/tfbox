@@ -74,11 +74,13 @@ def loader(
     return _loader
 
 
-def callbacks(loader,directory,folder,**kwargs):
+def callbacks(has_validation_data,loader,directory,folder,**kwargs):
     path=os.path.join(directory,folder)
     model_path=os.path.join(directory,'model')
-    print('!!!CB',f'{model_path}/'+'model.best.h5')
-    monitor='loss'
+    if has_validation_data:
+        monitor='val_loss'
+    else:
+        monitor='loss'
     tb=tf.keras.callbacks.TensorBoard(
         path,
         profile_batch=0,
