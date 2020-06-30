@@ -39,6 +39,8 @@ def loader(
         nb_classes,
         data_root=DATA_ROOT,
         onehot=True,
+        shuffle=True,
+        augment=True,
         limit=None,
         toy_size=TOY_SIZE,
         cropping=CROPPING,
@@ -66,18 +68,31 @@ def loader(
             float_cropping=float_cropping,
             size=size,
             limit=limit,
-            onehot=onehot )
+            onehot=onehot,
+            shuffle=shuffle,
+            augment=augment )
     return _loader
 
 
 def callbacks(loader,directory,folder,**kwargs):
     path=os.path.join(directory,folder)
+    model_path=os.path.join(directory,'model')
+    print('!!!CB',f'{model_path}/'+'model.best.h5')
+    monitor='loss'
     tb=tf.keras.callbacks.TensorBoard(
         path,
         profile_batch=0,
         histogram_freq=1)
+    es=tf.keras.callbacks.EarlyStopping(
+        monitor=monitor, 
+        patience=0, verbose=0,
+        restore_best_weights=False )
+    mc=tf.keras.callbacks.ModelCheckpoint(
+        monitor=monitor,
+        filepath=f'{model_path}/'+'model.best.h5', 
+        save_best_only=True)
     _callbacks=[
-        tb,
+        tb,es,mc,
         sw.callbacks.TBSegmentationImages(path,loader)]
     return _callbacks
 

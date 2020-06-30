@@ -39,8 +39,6 @@ class GroupedSeq(tf.keras.utils.Sequence):
             size=None,
             example_path=None,
             **handler_kwargs):
-        print("DLOADER",BAND_ORDERING)
-        print('\n'*10)
         self.nb_classes=nb_classes
         self.batch_size=batch_size
         self.augment=augment
