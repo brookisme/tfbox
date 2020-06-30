@@ -545,6 +545,7 @@ class SegmentClassifier(keras.Model):
             filters,
             nb_classes,
             len(kernel_size_list))
+        print('XXX',nb_classes,filters_list,kernel_size_list)
         if len(filters_list)>1:
             self.preclassifier=CBADStack(
                 filters_list=filters_list[:-1],

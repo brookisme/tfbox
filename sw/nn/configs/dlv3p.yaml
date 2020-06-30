@@ -9,8 +9,9 @@ dlv3p:
   up_refinements_filters: 256
   up_refinements_depth: 2
 
+
 sw:
-  backbone: xception_small
+  backbone: xception.tiny
   upsample_mode: bilinear
   classifier_kernel_size_list: [1]
   aspp: false

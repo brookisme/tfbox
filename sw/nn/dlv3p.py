@@ -8,8 +8,7 @@ from . import load
 #
 BAND_AXIS=-1
 BACKBONES={
-    'xception':  { 'model': xcpt.Xception, 'config': 'xception' },
-    'xception_small':  { 'model': xcpt.Xception, 'config': 'xception.small' },
+    'xception':  { 'model': xcpt.Xception }
 }
 
 
@@ -44,12 +43,21 @@ class DLV3p(tf.keras.Model):
 
     @staticmethod
     def build_backbone(backbone,**kwargs):
+        model_key=cfig=key_path=None
         if isinstance(backbone,str):
-            backbone=BACKBONES[backbone]
+            parts=backbone.split('.')
+            nb_parts=len(parts)
+            model_key=parts[0]
+            key_path=parts[-1]
+            if nb_parts==2:
+                cfig=model_key
+            else:
+                cfig=parts[1]
+            backbone=BACKBONES[model_key]
         if isinstance(backbone,dict):
             model=backbone['model']
-            cfig=backbone['config']
-            key_path=backbone.get('key_path')
+            cfig=model_key or backbone.get('config')
+            key_path=key_path or backbone.get('key_path')
             is_file_path=backbone.get('is_file_path',False)
             config=load.config(
                 cfig=cfig,

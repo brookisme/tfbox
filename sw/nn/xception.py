@@ -47,6 +47,7 @@ class Xception(tf.keras.Model):
     #
     def __init__(self,
             output_stride=DEFAULTS['output_stride'],
+            entry_flow_init_stride=DEFAULTS.get('entry_flow_init_stride',2),
             entry_flow_prefilters_stack=DEFAULTS['entry_flow_prefilters_stack'],
             entry_flow_filters_stack=DEFAULTS['entry_flow_filters_stack'],
             middle_flow_filters=DEFAULTS['middle_flow_filters'],
@@ -63,6 +64,7 @@ class Xception(tf.keras.Model):
             keep_mid_step=keep_mid_step,
             keep_indices=skip_indices)
         self.entry_stack, filters_out=self._entry_flow(
+            entry_flow_init_stride,
             entry_flow_prefilters_stack,
             entry_flow_filters_stack)
         self.middle_stack, filters_out=self._middle_flow(
@@ -91,13 +93,18 @@ class Xception(tf.keras.Model):
     #
     # INTERNAL
     #
-    def _entry_flow(self,prefilters,filters):
-        _layers=[ blocks.CBAD(
-            filters=prefilters[0],
-            strides=self.stride_manager.strides,
-            dilation_rate=self.stride_manager.dilation_rate,
-            keep_output=self.stride_manager.keep_index) ]
-        self.stride_manager.step()
+    def _entry_flow(self,init_stride,prefilters,filters):
+        if init_stride==1:
+            _layers=[ blocks.CBAD(filters=prefilters[0]) ]            
+        elif init_stride==2:
+            _layers=[ blocks.CBAD(
+                filters=prefilters[0],
+                strides=self.stride_manager.strides,
+                dilation_rate=self.stride_manager.dilation_rate,
+                keep_output=self.stride_manager.keep_index) ]
+            self.stride_manager.step()
+        else:
+            raise ValueError(f'entry_flow_init_stride must be 1 or 2')
         for f in prefilters[1:]:
             _layers.append(blocks.CBAD(
                 filters=f,
