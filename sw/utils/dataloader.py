@@ -1,11 +1,12 @@
-import re
 import os
+os.environ['IMAGE_KIT_BAND_ORDERING']='last'
+import re
 import random
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.utils import to_categorical
-from image_kit.handler import InputTargetHandler
+from image_kit.handler import InputTargetHandler,BAND_ORDERING
 
 BATCH_SIZE=6
 GROUP_COL='group_id'
@@ -38,6 +39,8 @@ class GroupedSeq(tf.keras.utils.Sequence):
             size=None,
             example_path=None,
             **handler_kwargs):
+        print("DLOADER",BAND_ORDERING)
+        print('\n'*10)
         self.nb_classes=nb_classes
         self.batch_size=batch_size
         self.augment=augment

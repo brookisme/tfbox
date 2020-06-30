@@ -140,7 +140,6 @@ class SegmentationImageWriter(object):
             name=f'epoch_{epoch}: batch_{batch_index}-image_{image_index}'
         else:
             name=f'batch_{batch_index}-image_{image_index}'
-
         description=DESCRIPTION_HEAD.format(epoch,batch_index,image_index)       
         if target_hist:
             description=DESCRIPTION_HIST.format(description,'target',target_hist)
