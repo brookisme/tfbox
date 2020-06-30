@@ -45,7 +45,6 @@ def loader(
         float_cropping=FLOAT_CROPPING,
         size=SIZE,
         nb_toy_batches=NB_TOY_BATCHES):
-    print('LOADER',loader_name)
     if loader_name=='fgen':
         if limit:
             nb_batches=limit*batch_size
@@ -84,19 +83,22 @@ def callbacks(loader,directory,folder,**kwargs):
 
 
 def loss(loss_func,weights,**kwargs):
-    return sw.loss.get(loss_func,weights,**kwargs)
-
+    if weights:
+        weights=[float(w) for w in weights]
+    out= sw.loss.get(loss_func,weights,**kwargs)
+    return out
 
 def optimizer(opt,**kwargs):
     return sw.optimizer.get(opt,**kwargs)
 
 
 def model(
+        nb_classes,
         model_name=DEFAULT_MODEL_NAME,
-        model_key_path=DLV3p.DEFAULT_KEY,
+        model_key_path=None,
+        backbone=None,
         size=None,
         in_ch=None,
-        nb_classes=None,
         kernel_size=None,
         out_kernel_size=None,
         channels=None ):
@@ -110,7 +112,8 @@ def model(
     elif model_name=='dlv3p':
         _model=DLV3p.from_config(
             nb_classes=nb_classes,
-            key_path=model_key_path )
+            key_path=model_key_path or DLV3p.DEFAULT_KEY,
+            backbone=backbone or DLV3p.DEFAULTS['backbone'])
     else:
         raise NotImplemented
     _input=tf.keras.Input(shape=(size,size,in_ch),name='input')
