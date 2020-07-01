@@ -11,11 +11,14 @@ from image_kit.handler import InputTargetHandler,BAND_ORDERING
 BATCH_SIZE=6
 GROUP_COL='group_id'
 INDEX_ERROR='requested batch {} of {} batches'
-STRIP_GS='surface-water-public/data/v1'
+STRIP_GS='surface-water-public'
 DATA_ROOT='data'
 GS='gs://'
 INPUT_COL='s1_path'
 TARGET_COL='gsw_path'
+INPUT_DTYPE=np.float32
+TARGET_DTYPE=np.int64
+
 
 class GroupedSeq(tf.keras.utils.Sequence):
         
@@ -38,6 +41,8 @@ class GroupedSeq(tf.keras.utils.Sequence):
             float_cropping=None,
             size=None,
             example_path=None,
+            input_dtype=INPUT_DTYPE,
+            target_dtype=TARGET_DTYPE,
             **handler_kwargs):
         self.nb_classes=nb_classes
         self.batch_size=batch_size
@@ -55,6 +60,8 @@ class GroupedSeq(tf.keras.utils.Sequence):
             float_cropping=float_cropping,
             size=512,
             example_path=example_path,
+            input_dtype=input_dtype,
+            target_dtype=target_dtype,
             **handler_kwargs)
 
         
@@ -118,7 +125,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
             self.handler.set_augmentation()
         inpts=np.array([self.get_input(r) for r in self.batch_rows])
         targs=np.array([self.get_target(r) for r in self.batch_rows])
-        if True: #self.onehot:
+        if self.onehot:
             targs=to_categorical(targs,num_classes=self.nb_classes)
         return inpts, targs #np.expand_dims(targs,-1)
 
