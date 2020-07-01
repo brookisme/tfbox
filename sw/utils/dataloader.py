@@ -46,7 +46,6 @@ class GroupedSeq(tf.keras.utils.Sequence):
             **handler_kwargs):
         self.nb_classes=nb_classes
         self.batch_size=batch_size
-        self.augment=augment
         self.shuffle=shuffle
         self.group_column=group_column
         self.input_column=input_column
@@ -62,6 +61,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
             example_path=example_path,
             input_dtype=input_dtype,
             target_dtype=target_dtype,
+            augment=augment,
             **handler_kwargs)
 
         
@@ -78,7 +78,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
         self.row=self._sample_row(data=self.matched_rows)
 
 
-    def select_batch(self,batch_index,set_augment=True,set_window=True):
+    def select_batch(self,batch_index):
         """ select batch (w/o loading images) """
         if batch_index>=self.nb_batches:
             raise ValueError(INDEX_ERROR.format(batch_index,self.nb_batches))

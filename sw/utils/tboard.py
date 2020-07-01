@@ -32,7 +32,7 @@ class SegmentationImageWriter(object):
             ax_h=4,
             ax_w=None,
             ax_delta=0.2,
-            preserve_epoch=5):
+            preserve_epoch=None):
         if not vmax: 
             vmax=len(target_colors)-1
         self.input_bands=input_bands
@@ -136,7 +136,7 @@ class SegmentationImageWriter(object):
             epoch=None,
             target_hist=None,
             prediction_hist=None):
-        if not ((epoch is None) or (epoch%self.preserve_epoch)):
+        if self.preserve_epoch and epoch and (not (epoch%self.preserve_epoch)):
             name=f'epoch_{epoch}: batch_{batch_index}-image_{image_index}'
         else:
             name=f'batch_{batch_index}-image_{image_index}'

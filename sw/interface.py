@@ -1,9 +1,10 @@
 import os
+from pathlib import Path
 import tensorflow as tf
-from sw.utils.dataloader import GroupedSeq, DATA_ROOT
-from tf_toys.dataloader import FGenerator
-from sw.nn.dlv3p import DLV3p
 from tf_toys.model import segmentor
+from tf_toys.dataloader import FGenerator
+from sw.utils.dataloader import GroupedSeq, DATA_ROOT
+from sw.nn.dlv3p import DLV3p
 import sw.loss
 import sw.optimizer
 import sw.callbacks
@@ -77,6 +78,7 @@ def loader(
 def callbacks(has_validation_data,loader,directory,folder,**kwargs):
     path=os.path.join(directory,folder)
     model_path=os.path.join(directory,'model')
+    Path(model_path).mkdir(parents=True, exist_ok=True)
     if has_validation_data:
         monitor='val_loss'
     else:
