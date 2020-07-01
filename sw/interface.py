@@ -81,12 +81,15 @@ def callbacks(
         directory,
         folder,
         model_name='model',
+        model_key_path=None,
         backbone=None,
         patience=1,
         **kwargs):
     path=os.path.join(directory,folder)
+    if model_key_path:
+        model_name=f'{model_name}-{model_key_path}'
     if backbone:
-        model_name=f'{model_name}-{backbone}'
+        model_name=f'{model_name}.{backbone}'
     model_path=os.path.join(directory,'model',model_name)
     model_path=f'{model_path}.best.h5'
     Path(model_path).mkdir(parents=True, exist_ok=True)
