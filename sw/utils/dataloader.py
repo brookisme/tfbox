@@ -184,7 +184,9 @@ class GroupedSeq(tf.keras.utils.Sequence):
         if isinstance(data,str):
             data=pd.read_csv(data,converters=converters)
         elif isinstance(data,list):
-            data=pd.concat([pd.read_csv(d,converters=converters) for d in data])
+            if isinstance(data[0],str):
+                data=[pd.read_csv(d,converters=converters) for d in data]
+            data=pd.concat(data)
         self.idents=data.loc[:,self.group_column].unique().tolist()
         if limit:
             self.idents=self.idents[:limit*self.batch_size]
