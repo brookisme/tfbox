@@ -76,21 +76,15 @@ def loader(
 
 
 def callbacks(
-        has_validation_data,
         loader,
         directory,
-        folder,
-        model_name='model',
-        model_key_path=None,
-        backbone=None,
+        has_validation_data,
+        name='model',
+        tensorboard_folder='tensorboard',
         patience=1,
         **kwargs):
-    path=os.path.join(directory,folder)
-    if model_key_path:
-        model_name=f'{model_name}-{model_key_path}'
-    if backbone:
-        model_name=f'{model_name}.{backbone}'
-    model_path=os.path.join(directory,'model',model_name)
+    path=os.path.join(directory,tensorboard_folder)
+    model_path=os.path.join(directory,'model',name)
     model_path=f'{model_path}.best'
     Path(model_path).mkdir(parents=True, exist_ok=True)
     if has_validation_data:
@@ -103,7 +97,7 @@ def callbacks(
         histogram_freq=1)
     es=tf.keras.callbacks.EarlyStopping(
         monitor=monitor, 
-        patience=patience, verbose=0,
+        patience=patience, 
         restore_best_weights=False )
     mc=tf.keras.callbacks.ModelCheckpoint(
         monitor=monitor,
