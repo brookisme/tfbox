@@ -91,7 +91,7 @@ def callbacks(
     if backbone:
         model_name=f'{model_name}.{backbone}'
     model_path=os.path.join(directory,'model',model_name)
-    model_path=f'{model_path}.best.h5'
+    model_path=f'{model_path}.best'
     Path(model_path).mkdir(parents=True, exist_ok=True)
     if has_validation_data:
         monitor='val_loss'
