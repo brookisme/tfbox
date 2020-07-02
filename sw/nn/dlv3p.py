@@ -7,9 +7,7 @@ from . import load
 # CONSTANTS
 #
 BAND_AXIS=-1
-BACKBONES={
-    'xception':  { 'model': xcpt.Xception }
-}
+
 
 
 #
@@ -19,6 +17,9 @@ class DLV3p(tf.keras.Model):
     #
     # CONSTANTS
     #
+    BACKBONES={
+        'xception':  { 'model': xcpt.Xception }
+    }
     DEFAULT_KEY='sw'
     DEFAULTS=load.config(cfig='dlv3p',key_path=DEFAULT_KEY)
     BEFORE_UP='before'
@@ -53,7 +54,7 @@ class DLV3p(tf.keras.Model):
                 cfig=model_key
             else:
                 cfig=parts[1]
-            backbone=BACKBONES[model_key]
+            backbone=DLV3p.BACKBONES[model_key]
         if isinstance(backbone,dict):
             model=backbone['model']
             cfig=model_key or backbone.get('config')

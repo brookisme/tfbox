@@ -20,7 +20,7 @@ class Xception(tf.keras.Model):
     # CONSTANTS
     #
     AUTO='auto'
-    DEFAULT_KEY='small'
+    DEFAULT_KEY='xlight_os8_mf16'
     DEFAULTS=load.config(cfig='xception',key_path=DEFAULT_KEY)
 
 
