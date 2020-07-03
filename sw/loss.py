@@ -57,5 +57,5 @@ def weighted_categorical_crossentropy(weights=None):
 # LOSS FUNCTION DICT
 #
 LOSS_FUNCTIONS={
-    'weighted_categorical_crossentropy': weighted_categorical_crossentropy
+    'weighted_categorical_crossentropy': weighted_categorical_crossentropy,
 }

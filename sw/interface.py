@@ -109,9 +109,11 @@ def callbacks(
     return _callbacks
 
 
-def loss(loss_func,weights,**kwargs):
+def loss(loss_func,weights,label_smoothing=None,**kwargs):
     if weights:
         weights=[float(w) for w in weights]
+    if label_smoothing:
+        kwargs['label_smoothing']=label_smoothing
     out= sw.loss.get(loss_func,weights,**kwargs)
     return out
 
