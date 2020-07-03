@@ -98,11 +98,12 @@ def callbacks(
     es=tf.keras.callbacks.EarlyStopping(
         monitor=monitor, 
         patience=patience, 
-        restore_best_weights=False )
+        restore_best_weights=True )
     mc=tf.keras.callbacks.ModelCheckpoint(
         monitor=monitor,
         filepath=model_path, 
-        save_best_only=True)
+        save_best_only=True,
+        save_weights_only=True )
     _callbacks=[
         tb,es,mc,
         sw.callbacks.TBSegmentationImages(path,loader)]
