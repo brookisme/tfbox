@@ -1,4 +1,6 @@
 import tensorflow as tf
+import tensorflow.keras.losses as losses
+import tensorflow.keras.backend as K
 #
 # CONSTANTS
 #
@@ -14,6 +16,7 @@ def get(loss_func=None,weights=None,**kwargs):
     if not loss_func:
         if weights:
             loss_func=DEFAULT_WEIGHTED_LOSS
+            kwargs['weights']=weights
         else:
             loss_func=DEFAULT_LOSS
     if isinstance(loss_func,str):
@@ -27,7 +30,7 @@ def get(loss_func=None,weights=None,**kwargs):
 #
 # CUSTOM LOSS FUNCTIIONS
 #
-def weighted_categorical_crossentropy(weights=None):
+def weighted_categorical_crossentropy(weights=None,**kwargs):
     """ weighted_categorical_crossentropy
         Args:
             * weights<ktensor|nparray|list>: crossentropy weights
@@ -35,8 +38,10 @@ def weighted_categorical_crossentropy(weights=None):
             * weighted categorical crossentropy function
     """
     if weights is None:
-        return tf.keras.losses.CategoricalCrossentropy()
+        print('WARNING: WCCE called without weights. Defaulting to CCE')
+        return losses.CategoricalCrossentropy(**kwargs)
     else:
+        print('WCCE',weights)
         if isinstance(weights,list) or isinstance(np.ndarray):
             weights=K.variable(weights)
         def _loss(target,output,from_logits=False):
@@ -58,4 +63,5 @@ def weighted_categorical_crossentropy(weights=None):
 #
 LOSS_FUNCTIONS={
     'weighted_categorical_crossentropy': weighted_categorical_crossentropy,
+    'categorical_crossentropy': losses.CategoricalCrossentropy
 }
