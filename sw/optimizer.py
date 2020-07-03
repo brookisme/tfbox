@@ -1,11 +1,11 @@
 import tensorflow as tf
-import tensorflow_addons as tfa
+# import tensorflow_addons as tfa
 
 
 #
 # CONSTANTS
 #
-DEFAULT_OPTIMIZER='radam'
+DEFAULT_OPTIMIZER='adam'
 
 
 
@@ -34,5 +34,5 @@ def get(optimizer=None,**kwargs):
 # OPTIMIZER DICT
 #
 OPTIMIZERS={
-    'radam': tfa.optimizers.RectifiedAdam
+    # 'radam': tfa.optimizers.RectifiedAdam
 }
