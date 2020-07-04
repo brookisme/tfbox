@@ -139,12 +139,19 @@ class DLV3p(tf.keras.Model):
             x=self.backbone_reducer(x)
         skips.reverse()
         for s, reducer, refines in zip(skips,self.skip_reducers,self.up_refinements):
+            print('--------------------------------')
+            print('--1',s.shape,x.shape)
             x=blocks.upsample(x,like=s)
+            print('--2',s.shape,x.shape)
             if reducer:
                 s=reducer(s)
+            print('--3',s.shape,x.shape)
             x=tf.concat([x,s],axis=BAND_AXIS)
+            print('-->',x.shape)
             for rfine in refines:
                 x=rfine(x)
+            print('==>',x.shape)
+            print('--------------------------------')
         if self.classifier_position==DLV3p.BEFORE_UP:
             x=self.classifier(x)
         x=blocks.upsample(x,like=inputs,interpolation=self.upsample_mode)

@@ -192,8 +192,8 @@ class GroupedSeq(tf.keras.utils.Sequence):
             self.idents=self.idents[:limit*self.batch_size]
             data=data.copy()[data[self.group_column].isin(self.idents)]
         if self.strip_gs:
-            data[self.input_column]=data[self.input_column].apply(self._localize_path)
-            data[self.target_column]=data[self.target_column].apply(self._localize_path)
+            data[self.input_column]=data.copy()[self.input_column].apply(self._localize_path)
+            data[self.target_column]=data.copy()[self.target_column].apply(self._localize_path)
         self.data=data
         self.nb_batches=int(len(self.idents)//self.batch_size)
         self.reset()
