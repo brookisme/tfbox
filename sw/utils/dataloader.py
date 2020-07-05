@@ -16,9 +16,11 @@ DATA_ROOT='data'
 GS='gs://'
 INPUT_COL='s1_path'
 TARGET_COL='gsw_path'
+WINDOW_INDEX_COL='window_index'
+WINDOW_COL='window'
+WINDOWED_GROUP_COL='__win_group_id'
 INPUT_DTYPE=np.float32
 TARGET_DTYPE=np.int64
-
 
 class GroupedSeq(tf.keras.utils.Sequence):
         
@@ -27,7 +29,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
             data,
             nb_classes,
             batch_size=BATCH_SIZE,
-            converters=None,
+            converters={},
             augment=True,
             shuffle=True,
             limit=None,
@@ -36,6 +38,9 @@ class GroupedSeq(tf.keras.utils.Sequence):
             input_column=INPUT_COL,
             target_column=TARGET_COL,
             group_column=GROUP_COL,
+            has_windows=False,
+            window_index_column=WINDOW_INDEX_COL,
+            window_column=WINDOW_COL,
             onehot=True,
             cropping=None,
             float_cropping=None,
@@ -47,11 +52,15 @@ class GroupedSeq(tf.keras.utils.Sequence):
         self.nb_classes=nb_classes
         self.batch_size=batch_size
         self.shuffle=shuffle
-        self.group_column=group_column
-        self.input_column=input_column
-        self.target_column=target_column
         self.strip_gs=strip_gs
         self.onehot=onehot
+        self._set_columns(
+            input_column,
+            target_column,
+            group_column,
+            has_windows,
+            window_index_column,
+            window_column)
         self._set_data_root(data_root)
         self._init_dataset(data,converters,limit)
         self.handler=InputTargetHandler(
@@ -64,7 +73,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
             augment=augment,
             **handler_kwargs)
 
-        
+
     #
     # PUBLIC
     #
@@ -134,14 +143,20 @@ class GroupedSeq(tf.keras.utils.Sequence):
         """ return input image for row or selected-row """
         if row is None:
             row=self.row
-        return self.handler.input(row[self.input_column],return_profile=False)
+        return self.handler.input(
+            row[self.input_column],
+            window=self._window(row),
+            return_profile=False)
     
     
     def get_target(self,row=None):
         """ return target image for row or selected-row """
         if row is None:
             row=self.row
-        return self.handler.target(row[self.target_column],return_profile=False)
+        return self.handler.target(
+            row[self.target_column],
+            window=self._window(row),
+            return_profile=False)
 
         
     def reset(self):
@@ -180,25 +195,60 @@ class GroupedSeq(tf.keras.utils.Sequence):
     #
     # INTERNAL
     #
+    def _set_columns(self,
+            input_column,
+            target_column,
+            group_column,
+            has_windows,
+            window_index_column,
+            window_column):
+        self.input_column=input_column
+        self.target_column=target_column
+        self.has_windows=has_windows
+        self.window_index_column=window_index_column
+        self.window_column=window_column
+        if self.has_windows:
+            self.group_column=WINDOWED_GROUP_COL
+            self.base_group_column=group_column
+        else:
+            self.group_column=group_column
+
+
     def _init_dataset(self,data,converters,limit):
+        if self.has_windows:
+            converters=converters or {}
+            converters[self.window_column]=eval
         if isinstance(data,str):
             data=pd.read_csv(data,converters=converters)
         elif isinstance(data,list):
             if isinstance(data[0],str):
                 data=[pd.read_csv(d,converters=converters) for d in data]
             data=pd.concat(data)
+        if self.has_windows:
+            data.loc[:,self.group_column]=data.apply(self._window_group,axis=1)
         self.idents=data.loc[:,self.group_column].unique().tolist()
         if limit:
             self.idents=self.idents[:limit*self.batch_size]
             data=data.copy()[data[self.group_column].isin(self.idents)]
         if self.strip_gs:
-            data[self.input_column]=data.copy()[self.input_column].apply(self._localize_path)
-            data[self.target_column]=data.copy()[self.target_column].apply(self._localize_path)
+            data.loc[:,self.input_column]=data[self.input_column].apply(self._localize_path)
+            data.loc[:,self.target_column]=data[self.target_column].apply(self._localize_path)
         self.data=data
         self.nb_batches=int(len(self.idents)//self.batch_size)
         self.reset()
         
     
+    def _window_group(self,row):
+        return f'{row[self.base_group_column]}__{row[self.window_index_column]}'
+
+
+    def _window(self,row):
+        if self.has_windows:
+            return row[self.window_column]
+        else:
+            return None
+
+
     def _set_data_root(self,data_root):
         if data_root is False:
             self.data_root=''
