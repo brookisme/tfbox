@@ -35,6 +35,7 @@ SEGMENTOR_CHANNELS=[32,64,128]
 def loader(
         loader_name,
         datasets,
+        has_windows,
         batch_size,
         in_ch,
         nb_classes,
@@ -64,6 +65,7 @@ def loader(
             datasets,
             nb_classes=nb_classes,
             data_root=data_root,
+            has_windows=has_windows,
             batch_size=batch_size,
             cropping=cropping,
             float_cropping=float_cropping,
