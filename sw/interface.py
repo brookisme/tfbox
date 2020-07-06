@@ -5,6 +5,7 @@ from tf_toys.model import segmentor
 from tf_toys.dataloader import FGenerator
 from sw.utils.dataloader import GroupedSeq, DATA_ROOT
 from sw.nn.dlv3p import DLV3p
+from sw.nn.xception import Xception
 import sw.loss
 import sw.optimizer
 import sw.callbacks
@@ -148,6 +149,10 @@ def model(
             nb_classes=nb_classes,
             key_path=model_key_path or DLV3p.DEFAULT_KEY,
             backbone=backbone or DLV3p.DEFAULTS['backbone'])
+    elif model_name=='xception':
+        _model=Xception.from_config(
+            nb_classes=nb_classes,
+            key_path=model_key_path or Xception.DEFAULT_SEGEMENT_KEY)
     else:
         raise NotImplemented
     _input=tf.keras.Input(shape=(size,size,in_ch),name='input')

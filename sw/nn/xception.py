@@ -21,8 +21,10 @@ class Xception(tf.keras.Model):
     #
     AUTO='auto'
     DEFAULT_KEY='xlight_os8_mf16'
+    DEFAULT_SEGEMENT_KEY='xlight_os8_mf16_seg'
     DEFAULTS=load.config(cfig='xception',key_path=DEFAULT_KEY)
-
+    GAP='gap'
+    SEGMENT='segment'
 
 
     #
@@ -55,7 +57,12 @@ class Xception(tf.keras.Model):
             exit_flow_filters_in=DEFAULTS['exit_flow_filters_in'],
             exit_flow_filters=DEFAULTS['exit_flow_filters'],
             exit_flow_postfilters_stack=DEFAULTS['exit_flow_postfilters_stack'],
-            classifier=DEFAULTS.get('classifier',False),
+            nb_classes=DEFAULTS.get('nb_classes',None),
+            classifier_type=DEFAULTS.get('classifier_type',False),
+            classifier_act=DEFAULTS.get('classifier_act'),
+            classifier_act_config=DEFAULTS.get('classifier_act_config',{}),
+            classifier_kernel_size_list=DEFAULTS.get('classifier_kernel_size_list'),
+            classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
             keep_mid_step=DEFAULTS.get('keep_mid_step',True),
             skip_indices=DEFAULTS.get('skip_indices',True)):
         super(Xception, self).__init__()
@@ -76,7 +83,19 @@ class Xception(tf.keras.Model):
             exit_flow_filters,
             exit_flow_postfilters_stack,
             filters_out)
-        self.classifier=classifier
+        if classifier_type==Xception.GAP:
+            # todo: global-avg-pooling+dense+classifier
+            pass
+        elif classifier_type==Xception.SEGMENT:
+            self.classifier=blocks.SegmentClassifier(
+                nb_classes=nb_classes,
+                filters_list=classifier_filters_list,
+                kernel_size_list=classifier_kernel_size_list,
+                output_act=classifier_act,
+                output_act_config=classifier_act_config)
+        else:
+            self.classifier=False
+
 
 
     def __call__(self,x,training=False,**kwargs):
