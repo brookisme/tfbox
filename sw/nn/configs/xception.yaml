@@ -1,6 +1,7 @@
 xception:
   output_stride: 16
   keep_mid_step: true
+  entry_flow_prestrides: [2,1]
   entry_flow_prefilters_stack: [32,64]
   entry_flow_filters_stack: [128,256,728]
   middle_flow_filters: auto
@@ -13,6 +14,7 @@ xception:
 xmid_os16_mf16:
   output_stride: 16
   keep_mid_step: true
+  entry_flow_prestrides: [2,1]
   entry_flow_prefilters_stack: [32,64]
   entry_flow_filters_stack: [128,256]
   middle_flow_filters: auto
@@ -25,6 +27,7 @@ xmid_os16_mf16:
 xlight_os8_mf16:
   output_stride: 8
   keep_mid_step: true
+  entry_flow_prestrides: [2,1]
   entry_flow_prefilters_stack: [32,64]
   entry_flow_filters_stack: [128]
   middle_flow_filters: auto
@@ -37,6 +40,7 @@ xlight_os8_mf16:
 xlight_os8_mf16_seg:
   output_stride: 8
   keep_mid_step: true
+  entry_flow_prestrides: [2,1]
   entry_flow_prefilters_stack: [32,64]
   entry_flow_filters_stack: [128]
   middle_flow_filters: auto
@@ -51,6 +55,7 @@ xlight_os8_mf16_seg:
 xlight_os8_mf4:
   output_stride: 8
   keep_mid_step: true
+  entry_flow_prestrides: [2,1]
   entry_flow_prefilters_stack: [32,64]
   entry_flow_filters_stack: [128]
   middle_flow_filters: auto
@@ -63,6 +68,7 @@ xlight_os8_mf4:
 xlight_os4_mf16:
   output_stride: 4
   keep_mid_step: true
+  entry_flow_prestrides: [2,1]
   entry_flow_prefilters_stack: [32,64]
   entry_flow_filters_stack: [128]
   middle_flow_filters: auto
@@ -75,6 +81,7 @@ xlight_os4_mf16:
 xlight_os4_mf4:
   output_stride: 4
   keep_mid_step: true
+  entry_flow_prestrides: [2,1]
   entry_flow_prefilters_stack: [32,64]
   entry_flow_filters_stack: [128]
   middle_flow_filters: auto
@@ -89,6 +96,7 @@ xtiny_os4_mf4:
   output_stride: 4
   keep_mid_step: true
   entry_flow_init_stride: 1
+  entry_flow_prestrides: [2,1]
   entry_flow_prefilters_stack: [32]
   entry_flow_filters_stack: [64]
   middle_flow_filters: auto
