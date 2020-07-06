@@ -37,6 +37,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
             data_root=DATA_ROOT,
             input_column=INPUT_COL,
             target_column=TARGET_COL,
+            target_resolution=None,
             group_column=GROUP_COL,
             has_windows=False,
             window_index_column=WINDOW_INDEX_COL,
@@ -66,7 +67,8 @@ class GroupedSeq(tf.keras.utils.Sequence):
         self.handler=InputTargetHandler(
             cropping=cropping,
             float_cropping=float_cropping,
-            size=512,
+            size=size,
+            target_resolution=target_resolution,
             example_path=example_path,
             input_dtype=input_dtype,
             target_dtype=target_dtype,
