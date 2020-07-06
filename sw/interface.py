@@ -159,7 +159,7 @@ def model(
             nb_classes=nb_classes,
             key_path=model_key_path or Steps.DEFAULT_KEY)
     else:
-        raise NotImplemented
+        raise NotImplementedError(f'model_name ({model_name}) is not implemented')
     _input=tf.keras.Input(shape=(size,size,in_ch),name='input')
     return tf.keras.Model(_input, _model(_input))
 

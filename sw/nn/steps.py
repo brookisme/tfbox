@@ -103,7 +103,6 @@ class Steps(tf.keras.Model):
                 strides_list,
                 kernel_size_list,
                 dilation_rate_list):
-            print(f,s,k,d)
             _layers.append(blocks.CBAD(
                 filters=f,
                 strides=s,
