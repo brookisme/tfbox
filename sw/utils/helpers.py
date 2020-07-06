@@ -45,28 +45,31 @@ class StrideManager(object):
 
 
     def step(self,strides=True):
-        if (strides==2) or (strides is True):
+        if strides is True:
+            strides=2
+        if (strides>1):
             self.stride_index+=1
-            self.current_output_stride=(2**self.stride_index)
-            if self.current_output_stride>=self.output_stride:
-                self.is_strided=False
+            new_output_stride=self.current_output_stride*strides
+            if new_output_stride>=self.output_stride:
+                self.at_max_stride=True
                 self.dilation_index+=1
-                self.dilation_rate=(2**(self.dilation_index))
+                self.dilation_rate*=strides
                 self.stride_state=1
                 self.keep_index=False
             else:
+                self.current_output_stride=new_output_stride
                 self.keep_index=self._keep_index()
-        elif strides and (strides!=1):
-            raise NotImplementedError('strides must be 1,2 or True/False/None')
 
 
     def strides(self,strides=None):
-        if strides==1:
+        if self.at_max_stride:
             return 1
-        elif (strides==2) or (strides is None):
-            return self.stride_state
         else:
-            raise NotImplementedError('strides must be 1 or 2 (or None => 2)')
+            if (strides is None) or (strides is True):
+                strides=2
+            elif strides is False:
+                strides=1
+            return strides
 
 
     def reset(self):
@@ -75,7 +78,7 @@ class StrideManager(object):
         self.dilation_rate=1
         self.stride_state=2
         self.current_output_stride=1
-        self.is_strided=True
+        self.at_max_stride=False
         self.keep_index=self._keep_index()
 
 

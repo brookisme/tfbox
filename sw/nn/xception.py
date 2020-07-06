@@ -52,10 +52,14 @@ class Xception(tf.keras.Model):
             entry_flow_prestrides=DEFAULTS['entry_flow_prestrides'],
             entry_flow_prefilters_stack=DEFAULTS['entry_flow_prefilters_stack'],
             entry_flow_filters_stack=DEFAULTS['entry_flow_filters_stack'],
+            entry_flow_strides_stack=DEFAULTS.get('entry_flow_strides_stack'),
+            entry_flow_seperable=DEFAULTS.get('entry_flow_seperable',True),
             middle_flow_filters=DEFAULTS['middle_flow_filters'],
             middle_flow_depth=DEFAULTS['middle_flow_depth'],
+            middle_flow_seperable=DEFAULTS.get('middle_flow_seperable',True),
             exit_flow_filters_in=DEFAULTS['exit_flow_filters_in'],
             exit_flow_filters=DEFAULTS['exit_flow_filters'],
+            exit_flow_seperable=DEFAULTS.get('exit_flow_seperable',True),
             exit_flow_postfilters_stack=DEFAULTS['exit_flow_postfilters_stack'],
             nb_classes=DEFAULTS.get('nb_classes',None),
             classifier_type=DEFAULTS.get('classifier_type',False),
@@ -70,19 +74,31 @@ class Xception(tf.keras.Model):
             output_stride,
             keep_mid_step=keep_mid_step,
             keep_indices=skip_indices)
+
         self.entry_stack, filters_out=self._entry_flow(
             entry_flow_prestrides,
             entry_flow_prefilters_stack,
-            entry_flow_filters_stack)
-        self.middle_stack, filters_out=self._middle_flow(
-            middle_flow_filters,
-            middle_flow_depth,
-            filters_out)
-        self.exit_stack, filters_out=self._exit_flow(
-            exit_flow_filters_in,
-            exit_flow_filters,
-            exit_flow_postfilters_stack,
-            filters_out)
+            entry_flow_filters_stack,
+            entry_flow_strides_stack,
+            entry_flow_seperable)
+
+        if middle_flow_filters:
+            self.middle_stack, filters_out=self._middle_flow(
+                middle_flow_filters,
+                middle_flow_depth,
+                middle_flow_seperable,
+                filters_out)
+        else:
+            self.middle_stack=False
+        if exit_flow_filters:
+            self.exit_stack, filters_out=self._exit_flow(
+                exit_flow_filters_in,
+                exit_flow_filters,
+                exit_flow_seperable,
+                exit_flow_postfilters_stack,
+                filters_out)
+        else:
+            self.exit_stack=False
         if classifier_type==Xception.GAP:
             # todo: global-avg-pooling+dense+classifier
             pass
@@ -100,8 +116,10 @@ class Xception(tf.keras.Model):
 
     def __call__(self,x,training=False,**kwargs):
         x,entry_skips=self._process_stack(self.entry_stack,x)
-        x=self._process_stack(self.middle_stack,x,False)
-        x,exit_skips=self._process_stack(self.exit_stack,x)
+        if self.middle_stack:
+            x=self._process_stack(self.middle_stack,x,False)
+        if self.exit_stack:            
+            x,exit_skips=self._process_stack(self.exit_stack,x)
         if self.classifier:
             return self.classifier(x)
         else:
@@ -112,7 +130,7 @@ class Xception(tf.keras.Model):
     #
     # INTERNAL
     #
-    def _entry_flow(self,prestrides,prefilters,filters):
+    def _entry_flow(self,prestrides,prefilters,filters,strides,seperable):
         _layers=[]
         for s,f in zip(prestrides,prefilters):
             _layers.append(blocks.CBAD(
@@ -121,25 +139,27 @@ class Xception(tf.keras.Model):
                 dilation_rate=self.stride_manager.dilation_rate,
                 keep_output=self.stride_manager.keep_index))
             self.stride_manager.step(s)
-        for f in filters:
+        if not strides:
+            strides=[2]*len(filters)
+        for f,s in zip(filters,strides):
             _layers.append(blocks.CBADStack(
-                    seperable=True,
+                    seperable=seperable,
                     depth=3,
                     filters=f,
-                    output_stride=self.stride_manager.strides(),
+                    output_stride=self.stride_manager.strides(s),
                     dilation_rate=self.stride_manager.dilation_rate,
                     keep_output=self.stride_manager.keep_index ))
-            self.stride_manager.step()
+            self.stride_manager.step(s)
         return _layers, filters[-1]
 
 
-    def _middle_flow(self,filters,flow_depth,prev_filters):
+    def _middle_flow(self,filters,flow_depth,seperable,prev_filters):
         _layers=[]
         if filters==Xception.AUTO:
             filters=prev_filters
         for _ in range(flow_depth):
             _layers.append(blocks.CBADStack(
-                seperable=True,
+                seperable=seperable,
                 depth=3,
                 filters=filters,
                 dilation_rate=self.stride_manager.dilation_rate,
@@ -147,12 +167,12 @@ class Xception(tf.keras.Model):
         return _layers, filters
 
 
-    def _exit_flow(self,filters_in,filters,postfilters,prev_filters):
+    def _exit_flow(self,filters_in,filters,seperable,postfilters,prev_filters):
         if filters_in==Xception.AUTO:
             filters_in=prev_filters
         _layers=[]
         _layers.append(blocks.CBADStack(
-                seperable=True,
+                seperable=seperable,
                 depth=3,
                 filters=filters,
                 filters_in=filters_in,
@@ -163,7 +183,7 @@ class Xception(tf.keras.Model):
         for f in postfilters:
             _layers.append(blocks.CBAD(
                 filters=f,
-                seperable=True,
+                seperable=seperable,
                 dilation_rate=self.stride_manager.dilation_rate))
         if postfilters:
             filters=postfilters[-1]

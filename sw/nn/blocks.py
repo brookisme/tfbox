@@ -171,8 +171,6 @@ class CBADStack(keras.Model):
             keep_output=False,
             **conv_config):
         super(CBADStack, self).__init__()
-        if output_stride not in [1,2]:
-            raise NotImplementedError('output_stride must be 1 or 2')
         if filters_list:
             depth=len(filters_list)
         elif kernel_size_list:
