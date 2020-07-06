@@ -1,0 +1,11 @@
+steps:
+  filters_list: [32,64,192,256]
+  strides_list: [1,1,3,1]
+  classifier_kernel_size_list: [3,1]
+
+
+steps_d64:
+  filters_list: [32,64,192,256,64]
+  strides_list: [1,1,3,1,1]
+  dilation_rate_list: [1,1,1,1,2]
+  classifier_kernel_size_list: [3,1]

@@ -6,6 +6,7 @@ from tf_toys.dataloader import FGenerator
 from sw.utils.dataloader import GroupedSeq, DATA_ROOT
 from sw.nn.dlv3p import DLV3p
 from sw.nn.xception import Xception
+from sw.nn.steps import Steps
 import sw.loss
 import sw.optimizer
 import sw.callbacks
@@ -153,6 +154,10 @@ def model(
         _model=Xception.from_config(
             nb_classes=nb_classes,
             key_path=model_key_path or Xception.DEFAULT_SEGEMENT_KEY)
+    elif model_name=='steps':
+        _model=Steps.from_config(
+            nb_classes=nb_classes,
+            key_path=model_key_path or Steps.DEFAULT_KEY)
     else:
         raise NotImplemented
     _input=tf.keras.Input(shape=(size,size,in_ch),name='input')
