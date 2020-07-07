@@ -41,11 +41,18 @@ def weighted_categorical_crossentropy(weights=None,**kwargs):
         print('WARNING: WCCE called without weights. Defaulting to CCE')
         return losses.CategoricalCrossentropy(**kwargs)
     else:
-        print('WCCE',weights)
+        print('WCCE',weights,kwargs)
+        from_logits=kwargs.pop('from_logits',True)
         if isinstance(weights,list) or isinstance(np.ndarray):
             weights=K.variable(weights)
-        def _loss(target,output,from_logits=False):
-            if not from_logits:
+        def _loss(target,output):
+            if from_logits:
+                cce=losses.CategoricalCrossentropy(**kwargs)
+                unweighted_losses = cce(target,output)
+                target_weights = tf.reduce_sum(weights * target, axis=1)
+                weighted_losses = unweighted_losses * target_weights
+                return tf.reduce_mean(weighted_losses)
+            else:
                 output /= tf.reduce_sum(output,
                                         len(output.get_shape()) - 1,
                                         True)
@@ -53,8 +60,6 @@ def weighted_categorical_crossentropy(weights=None,**kwargs):
                 output = tf.clip_by_value(output, _epsilon, 1. - _epsilon)
                 weighted_losses = target * tf.math.log(output) * weights
                 return - tf.reduce_sum(weighted_losses,len(output.get_shape()) - 1)
-            else:
-                raise ValueError('WeightedCategoricalCrossentropy: not valid with logits')
     return _loss
 
 

@@ -528,7 +528,7 @@ class SegmentClassifier(keras.Model):
             filters_list=None,
             kernel_size=3,
             kernel_size_list=None,
-            output_act=None,
+            output_act=False,
             output_act_config={},
             seperable_preclassification=False,
             residual_preclassification=False,
@@ -588,11 +588,12 @@ class SegmentClassifier(keras.Model):
 
 
     def _activation(self,nb_classes,act):
-        if (act is None) or (act==SegmentClassifier.AUTO):
+        if (act is True) or (act==SegmentClassifier.AUTO):
             if nb_classes==1:
                 act='sigmoid'
             else:
                 act='softmax'
+        print('_act!',act)
         return act
 
 

@@ -116,12 +116,13 @@ def callbacks(
     return _callbacks
 
 
-def loss(loss_func,weights,label_smoothing=None,**kwargs):
+def loss(loss_func,weights,**kwargs):
     if weights:
         weights=[float(w) for w in weights]
-    if label_smoothing:
-        kwargs['label_smoothing']=label_smoothing
-    out= sw.loss.get(loss_func,weights,**kwargs)
+    out=sw.loss.get(
+        loss_func,
+        weights,
+        **kwargs)
     return out
 
 def optimizer(opt,**kwargs):
