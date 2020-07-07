@@ -34,5 +34,6 @@ def get(optimizer=None,**kwargs):
 # OPTIMIZER DICT
 #
 OPTIMIZERS={
-    # 'radam': tfa.optimizers.RectifiedAdam
+    # 'radam': tfa.optimizers.RectifiedAdam,
+    'adam': tf.keras.optimizers.Adam
 }
