@@ -528,7 +528,7 @@ class SegmentClassifier(keras.Model):
             filters_list=None,
             kernel_size=3,
             kernel_size_list=None,
-            output_act=False,
+            output_act=True,
             output_act_config={},
             seperable_preclassification=False,
             residual_preclassification=False,
@@ -552,10 +552,12 @@ class SegmentClassifier(keras.Model):
                 **stack_config)
         else:
             self.preclassifier=False
+        act=self._activation(nb_classes,output_act)
+        print('OUTPUT_ACTIVATION:',act,output_act)
         self.classifier=CBAD(
                 filters=filters_list[-1],
                 kernel_size=kernel_size_list[-1],
-                act=self._activation(nb_classes,output_act),
+                act=act,
                 act_config=output_act_config)
 
 
@@ -593,7 +595,6 @@ class SegmentClassifier(keras.Model):
                 act='sigmoid'
             else:
                 act='softmax'
-        print('_act!',act)
         return act
 
 

@@ -100,7 +100,7 @@ class DLV3p(tf.keras.Model):
             classifier_position=DEFAULTS.get('classifier_position',BEFORE_UP),
             classifier_kernel_size_list=DEFAULTS['classifier_kernel_size_list'],
             classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
-            classifier_act=DEFAULTS.get('classifier_act'),
+            classifier_act=DEFAULTS.get('classifier_act',True),
             classifier_act_config=DEFAULTS.get('classifier_act_config',{})):
         super(DLV3p, self).__init__()
         self.upsample_mode=upsample_mode or DLV3p.UPSAMPLE_MODE

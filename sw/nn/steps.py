@@ -52,7 +52,7 @@ class Steps(tf.keras.Model):
             dilation_rate_list=DEFAULTS.get('dilation_rate_list',1),
             nb_classes=DEFAULTS.get('nb_classes',None),
             classifier_type=DEFAULTS.get('classifier_type',SEGMENT),
-            classifier_act=DEFAULTS.get('classifier_act'),
+            classifier_act=DEFAULTS.get('classifier_act',True),
             classifier_act_config=DEFAULTS.get('classifier_act_config',{}),
             classifier_kernel_size_list=DEFAULTS.get('classifier_kernel_size_list'),
             classifier_filters_list=DEFAULTS.get('classifier_filters_list'),

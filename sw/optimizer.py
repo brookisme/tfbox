@@ -18,6 +18,7 @@ def get(optimizer=None,**kwargs):
     if isinstance(optimizer,str):
         optimizer=OPTIMIZERS.get(optimizer,optimizer)
     if not isinstance(optimizer,str):
+        print('OPTIMIZER:',optimizer,kwargs)
         optimizer=optimizer(**kwargs)
     return optimizer
 
