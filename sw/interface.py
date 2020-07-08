@@ -27,10 +27,6 @@ SEGMENTOR_CHANNELS=[32,64,128]
 
 
 
-
-
-
-
 #
 # PUBLIC
 #
@@ -138,8 +134,17 @@ def model(
         in_ch=None,
         kernel_size=None,
         out_kernel_size=None,
-        channels=None ):
+        channels=None,
+        dropout=None,
+        **kwargs ):
     model_name=model_name or DEFAULT_MODEL_NAME
+    print(
+        'MODEL:\n',
+        f'\t- model_name: {model_name}\n',
+        f'\t- model_key_path: {model_key_path}\n',
+        f'\t- backbone: {backbone}\n',
+        f'\t- dropout: {dropout}\n',
+        f'\t* {kwargs}')
     if model_name=='toy':
         _model=segmentor(
             nb_classes=nb_classes,
