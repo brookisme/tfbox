@@ -24,6 +24,19 @@ xception_seg:
   classifier_kernel_size_list: [3,1]
 
 
+xception_seg_m2_c3:
+  output_stride: 3
+  entry_flow_prestrides: [1,1]
+  entry_flow_prefilters_stack: [32,64]
+  entry_flow_filters_stack: [128]
+  entry_flow_strides_stack: [3]
+  middle_flow_filters: auto
+  middle_flow_depth: 2
+  exit_flow_filters: false
+  classifier_type: segment
+  classifier_kernel_size_list: [3]
+
+
 xception_seg_long:
   output_stride: 3
   entry_flow_prestrides: [1,1]
