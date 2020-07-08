@@ -138,7 +138,12 @@ def model(
         in_ch=None,
         kernel_size=None,
         out_kernel_size=None,
-        channels=None ):
+        channels=None,
+        dropout=False,
+        entry_flow_dropout=False,
+        middle_flow_dropout=False,
+        exit_flow_dropout=False,
+        **kwargs ):
     model_name=model_name or DEFAULT_MODEL_NAME
     if model_name=='toy':
         _model=segmentor(
@@ -150,15 +155,22 @@ def model(
         _model=DLV3p.from_config(
             nb_classes=nb_classes,
             key_path=model_key_path or DLV3p.DEFAULT_KEY,
-            backbone=backbone or DLV3p.DEFAULTS['backbone'])
+            backbone=backbone or DLV3p.DEFAULTS['backbone'],
+            **kwargs)
     elif model_name=='xception':
+        kwargs['dropout']=dropout
+        kwargs['entry_flow_dropout']=entry_flow_dropout
+        kwargs['middle_flow_dropout']=middle_flow_dropout
+        kwargs['exit_flow_dropout']=exit_flow_dropout 
         _model=Xception.from_config(
             nb_classes=nb_classes,
-            key_path=model_key_path or Xception.DEFAULT_SEGEMENT_KEY)
+            key_path=model_key_path or Xception.DEFAULT_SEGEMENT_KEY,
+            **kwargs)
     elif model_name=='steps':
         _model=Steps.from_config(
             nb_classes=nb_classes,
-            key_path=model_key_path or Steps.DEFAULT_KEY)
+            key_path=model_key_path or Steps.DEFAULT_KEY,
+            **kwargs)
     else:
         raise NotImplementedError(f'model_name ({model_name}) is not implemented')
     _input=tf.keras.Input(shape=(size,size,in_ch),name='input')

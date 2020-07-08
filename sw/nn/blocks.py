@@ -126,7 +126,7 @@ class CBAD(keras.Model):
         if dropout:
             if dropout is True:
                 dropout=DEFAULT_DROPOUT_RATE
-            dropout=layers.Dropout(rate,**config)
+            dropout=layers.Dropout(dropout,**config)
         return dropout
 
 
@@ -593,7 +593,6 @@ class SegmentClassifier(keras.Model):
                 act='sigmoid'
             else:
                 act='softmax'
-        print('_act!',act)
         return act
 
 
