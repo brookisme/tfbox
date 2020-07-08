@@ -144,6 +144,13 @@ def model(
         middle_flow_dropout=False,
         exit_flow_dropout=False,
         **kwargs ):
+    print(
+        'MODEL:\n',
+        f'\t- model_name: {model_name}\n',
+        f'\t- model_key_path: {model_key_path}\n',
+        f'\t- backbone: {backbone}\n',
+        f'\t- dropout: {dropout}\n',
+        f'\t* {kwargs}')
     model_name=model_name or DEFAULT_MODEL_NAME
     if model_name=='toy':
         _model=segmentor(
