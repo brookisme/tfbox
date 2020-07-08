@@ -42,7 +42,7 @@ def weighted_categorical_crossentropy(weights=None,**kwargs):
         return losses.CategoricalCrossentropy(**kwargs)
     else:
         print('WCCE',weights,kwargs)
-        from_logits=kwargs.pop('from_logits',True)
+        from_logits=kwargs.pop('from_logits',False)
         if isinstance(weights,list) or isinstance(np.ndarray):
             weights=K.variable(weights)
         def _loss(target,output):
