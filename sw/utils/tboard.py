@@ -11,7 +11,6 @@ import io
 INPUT_BANDS=[1]
 TARGET_COLORS=['#ff0000','#fafafa','#0000aa']
 DESCRIPTION_HEAD="""
-    * epoch: {}
     * batch_index: {}
     * image_index: {}
 """
@@ -140,7 +139,7 @@ class SegmentationImageWriter(object):
             name=f'epoch_{epoch}: batch_{batch_index}-image_{image_index}'
         else:
             name=f'batch_{batch_index}-image_{image_index}'
-        description=DESCRIPTION_HEAD.format(epoch,batch_index,image_index)       
+        description=DESCRIPTION_HEAD.format(batch_index,image_index)       
         if target_hist:
             description=DESCRIPTION_HIST.format(description,'target',target_hist)
         if prediction_hist:

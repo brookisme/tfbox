@@ -8,7 +8,7 @@ from sw.utils.tboard import SegmentationImageWriter, INPUT_BANDS, TARGET_COLORS
 # CALLBACKS
 #
 class TBSegmentationImages(keras.callbacks.Callback):
-
+    RANDOM='random'
 
     def __init__(self,
             data_dir,
@@ -22,7 +22,7 @@ class TBSegmentationImages(keras.callbacks.Callback):
             ax_delta=0.2,
             preserve_epoch=5,
             sample_batch_indices=None,
-            sample_batch_index=None):
+            sample_batch_index=0):
         super(TBSegmentationImages,self).__init__()
         self.sample_batch_index=sample_batch_index
         self.sample_batch_indices=sample_batch_indices or list(range(len(loader)))
@@ -40,7 +40,7 @@ class TBSegmentationImages(keras.callbacks.Callback):
 
 
     def on_epoch_end(self, epoch, logs={}):
-        if self.sample_batch_index is None:
+        if self.sample_batch_index==TBSegmentationImages.RANDOM:
             self.sample_batch_index=random.choice(self.sample_batch_indices)
         self.siw.write_batch(
             self.sample_batch_index,

@@ -82,12 +82,6 @@ class Xception(tf.keras.Model):
            middle_flow_dropout=dropout
            exit_flow_dropout=dropout
 
-        print(
-            'X=>DROPOUT:',
-            dropout,
-            entry_flow_dropout,
-            middle_flow_dropout,
-            exit_flow_dropout)
 
         self.stride_manager=StrideManager(
             output_stride,
@@ -153,13 +147,13 @@ class Xception(tf.keras.Model):
     # INTERNAL
     #
     def _entry_flow(self,prestrides,prefilters,filters,strides,seperable,dropout):
-        print('ENTRY DROPOUT: NOT IMPLEMENTED',dropout)
         _layers=[]
         for s,f in zip(prestrides,prefilters):
             _layers.append(blocks.CBAD(
                 filters=f,
                 strides=self.stride_manager.strides(s),
                 dilation_rate=self.stride_manager.dilation_rate,
+                dropout=dropout,
                 keep_output=self.stride_manager.keep_index))
             self.stride_manager.step(s)
         if not strides:
@@ -167,6 +161,7 @@ class Xception(tf.keras.Model):
         for f,s in zip(filters,strides):
             _layers.append(blocks.CBADStack(
                     seperable=seperable,
+                    dropout=dropout,
                     depth=3,
                     filters=f,
                     output_stride=self.stride_manager.strides(s),
@@ -177,13 +172,13 @@ class Xception(tf.keras.Model):
 
 
     def _middle_flow(self,filters,flow_depth,seperable,dropout,prev_filters):
-        print('MIDDLE DROPOUT: NOT IMPLEMENTED',dropout)
         _layers=[]
         if filters==Xception.AUTO:
             filters=prev_filters
         for _ in range(flow_depth):
             _layers.append(blocks.CBADStack(
                 seperable=seperable,
+                dropout=dropout,
                 depth=3,
                 filters=filters,
                 dilation_rate=self.stride_manager.dilation_rate,
@@ -192,12 +187,12 @@ class Xception(tf.keras.Model):
 
 
     def _exit_flow(self,filters_in,filters,seperable,dropout,postfilters,prev_filters):
-        print('EXIT DROPOUT: NOT IMPLEMENTED',dropout)
         if filters_in==Xception.AUTO:
             filters_in=prev_filters
         _layers=[]
         _layers.append(blocks.CBADStack(
                 seperable=seperable,
+                dropout=dropout,
                 depth=3,
                 filters=filters,
                 filters_in=filters_in,
@@ -209,6 +204,7 @@ class Xception(tf.keras.Model):
             _layers.append(blocks.CBAD(
                 filters=f,
                 seperable=seperable,
+                dropout=dropout,
                 dilation_rate=self.stride_manager.dilation_rate))
         if postfilters:
             filters=postfilters[-1]
