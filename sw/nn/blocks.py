@@ -126,8 +126,8 @@ class CBAD(keras.Model):
         if dropout:
             if dropout is True:
                 dropout=DEFAULT_DROPOUT_RATE
-            dropout=layers.Dropout(rate,**config)
-        return dropout
+            dropout=layers.Dropout(dropout,**config)
+            return dropout
 
 
 

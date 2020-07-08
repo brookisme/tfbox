@@ -136,6 +136,9 @@ def model(
         out_kernel_size=None,
         channels=None,
         dropout=None,
+        entry_flow_dropout=None,
+        middle_flow_dropout=None,
+        exit_flow_dropout=None,
         **kwargs ):
     model_name=model_name or DEFAULT_MODEL_NAME
     print(
@@ -157,9 +160,14 @@ def model(
             key_path=model_key_path or DLV3p.DEFAULT_KEY,
             backbone=backbone or DLV3p.DEFAULTS['backbone'])
     elif model_name=='xception':
+        kwargs['dropout']=dropout
+        kwargs['entry_flow_dropout']=entry_flow_dropout
+        kwargs['middle_flow_dropout']=middle_flow_dropout
+        kwargs['exit_flow_dropout']=exit_flow_dropout 
         _model=Xception.from_config(
             nb_classes=nb_classes,
-            key_path=model_key_path or Xception.DEFAULT_SEGEMENT_KEY)
+            key_path=model_key_path or Xception.DEFAULT_SEGEMENT_KEY,
+            **kwargs )
     elif model_name=='steps':
         _model=Steps.from_config(
             nb_classes=nb_classes,
