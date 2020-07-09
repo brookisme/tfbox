@@ -81,18 +81,18 @@ def callbacks(
         loader,
         directory,
         has_validation_data,
+        monitor='loss',
         name='model',
         tensorboard_folder='tensorboard',
-        patience=1,
+        patience=0,
         **kwargs):
     path=os.path.join(directory,tensorboard_folder)
     model_path=os.path.join(directory,'model',name)
     model_path=f'{model_path}.best'
     Path(model_path).mkdir(parents=True, exist_ok=True)
     if has_validation_data:
-        monitor='val_loss'
-    else:
-        monitor='loss'
+        monitor=f'val_{monitor}'
+    print('CALLBACKS:',monitor,patience)
     tb=tf.keras.callbacks.TensorBoard(
         path,
         profile_batch=0,
