@@ -37,29 +37,19 @@ def weighted_categorical_crossentropy(weights=None,**kwargs):
         Returns:
             * weighted categorical crossentropy function
     """
+    cce=losses.CategoricalCrossentropy(**kwargs)
     if weights is None:
         print('WARNING: WCCE called without weights. Defaulting to CCE')
-        return losses.CategoricalCrossentropy(**kwargs)
+        return cce
     else:
-        print('WCCE',weights,kwargs)
-        from_logits=kwargs.pop('from_logits',False)
+        print('WCCE:',weights,kwargs)
         if isinstance(weights,list) or isinstance(np.ndarray):
             weights=K.variable(weights)
         def _loss(target,output):
-            if from_logits:
-                cce=losses.CategoricalCrossentropy(**kwargs)
-                unweighted_losses = cce(target,output)
-                target_weights = tf.reduce_sum(weights * target, axis=1)
-                weighted_losses = unweighted_losses * target_weights
-                return tf.reduce_mean(weighted_losses)
-            else:
-                output /= tf.reduce_sum(output,
-                                        len(output.get_shape()) - 1,
-                                        True)
-                _epsilon = tf.convert_to_tensor(K.epsilon(), dtype=output.dtype.base_dtype)
-                output = tf.clip_by_value(output, _epsilon, 1. - _epsilon)
-                weighted_losses = target * tf.math.log(output) * weights
-                return - tf.reduce_sum(weighted_losses,len(output.get_shape()) - 1)
+            unweighted_losses=cce(target,output)
+            pixel_weights=tf.reduce_sum(weights*target, axis=-1)
+            weighted_losses=unweighted_losses*pixel_weights
+            return tf.reduce_mean(weighted_losses,axis=[1,2])
     return _loss
 
 

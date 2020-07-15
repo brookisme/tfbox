@@ -130,6 +130,7 @@ def model(
         model_name=DEFAULT_MODEL_NAME,
         model_key_path=None,
         backbone=None,
+        classifier_act=True,
         size=None,
         in_ch=None,
         kernel_size=None,
@@ -146,6 +147,7 @@ def model(
         f'\t- model_name: {model_name}\n',
         f'\t- model_key_path: {model_key_path}\n',
         f'\t- backbone: {backbone}\n',
+        f'\t- classifier_act: {classifier_act}\n'
         f'\t- dropout: {dropout}\n',
         f'\t* {kwargs}')
     if model_name=='toy':
@@ -167,6 +169,7 @@ def model(
         _model=Xception.from_config(
             nb_classes=nb_classes,
             key_path=model_key_path or Xception.DEFAULT_SEGEMENT_KEY,
+            classifier_act=classifier_act,
             **kwargs )
     elif model_name=='steps':
         _model=Steps.from_config(
