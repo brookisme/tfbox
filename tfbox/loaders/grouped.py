@@ -252,7 +252,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
 
     def _set_data_root(self,data_root):
         if data_root is False:
-            self.data_root=''
+            self.data_root=False
         elif isinstance(data_root,str):
             self.data_root=data_root
         else:
@@ -268,7 +268,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
     def _localize_path(self,path):
         path=re.sub(REMOTE_HEAD,'',path)
         if isinstance(self.localize,str):
-            path=re.sub(f'^{self.localize}','',path)
+            path=re.sub(f'^{self.localize}/','',path)
         if self.data_root:
             path=f'{self.data_root}/{path}'
         return path
