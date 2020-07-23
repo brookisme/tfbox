@@ -3,8 +3,12 @@ setup(
   name = 'tfbox',
   package_dir = {
     'tfbox': 'tfbox',
+    'tfbox.callbacks': 'tfbox/callbacks',
+    'tfbox.loaders': 'tfbox/loaders',
+    'tfbox.losses': 'tfbox/losses',
     'tfbox.nn': 'tfbox/nn',
-    'tfbox.utils': 'tfbox/utils'},
+    'tfbox.utils': 'tfbox/utils'
+  },
   packages=['tfbox','tfbox.nn','tfbox.utils'],
   version = '0.0.0.1',
   description = 'tfbox: a collection of models and tools for tensorflow',
