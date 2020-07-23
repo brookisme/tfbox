@@ -1,3 +1,3 @@
-# surface-water
+# tfbox
 
-Surface water classification using Sentinel-1 data
+a collection of models and tools for tensorflow

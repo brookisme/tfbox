@@ -1,0 +1,47 @@
+dlv3p:
+  backbone: xception
+  upsample_mode: bilinear
+  classifier_kernel_size_list: [3,1]
+  aspp: true
+  backbone_reducer_filters: 256
+  backbone_reducer_kernel_size: 1
+  skip_reducer_filters: 64
+  up_refinements_filters: 256
+  up_refinements_depth: 2
+
+
+dlv3p-no_aspp:
+  backbone: xception
+  upsample_mode: bilinear
+  classifier_kernel_size_list: [3,1]
+  aspp: false
+  backbone_reducer_filters: 256
+  backbone_reducer_kernel_size: 1
+  skip_reducer_filters: 64
+  up_refinements_filters: 256
+  up_refinements_depth: 2
+
+
+sw:
+  backbone: xception.xlight_os8_mf16
+  upsample_mode: bilinear
+  classifier_kernel_size_list: [3,1]
+  aspp: true
+  backbone_reducer_filters: false
+  backbone_reducer_kernel_size: 1
+  skip_reducer_filters: 64
+  up_refinements_filters: 256
+  up_refinements_depth: 2
+
+
+sw-no_aspp:
+  backbone: xception.xlight_os8_mf16
+  upsample_mode: bilinear
+  classifier_kernel_size_list: [3,1]
+  aspp: false
+  backbone_reducer_filters: false
+  backbone_reducer_kernel_size: 1
+  skip_reducer_filters: 64
+  up_refinements_filters: 256
+  up_refinements_depth: 2
+

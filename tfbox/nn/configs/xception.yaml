@@ -1,0 +1,162 @@
+xception:
+  output_stride: 16
+  keep_mid_step: true
+  entry_flow_prestrides: [2,1]
+  entry_flow_prefilters_stack: [32,64]
+  entry_flow_filters_stack: [128,256,728]
+  middle_flow_filters: auto
+  middle_flow_depth: 16
+  exit_flow_filters_in: auto
+  exit_flow_filters: 1024
+  exit_flow_postfilters_stack: [1536,1536,2048]
+
+
+xception_seg:
+  output_stride: 3
+  entry_flow_prestrides: [1,1]
+  entry_flow_prefilters_stack: [32,64]
+  entry_flow_filters_stack: [128]
+  entry_flow_strides_stack: [3]
+  middle_flow_filters: auto
+  middle_flow_depth: 1
+  exit_flow_filters: false
+  classifier_type: segment
+  classifier_kernel_size_list: [3,1]
+
+
+xception_seg_m4_c5:
+  output_stride: 3
+  entry_flow_prestrides: [1,1]
+  entry_flow_prefilters_stack: [32,64]
+  entry_flow_filters_stack: [128]
+  entry_flow_strides_stack: [3]
+  middle_flow_filters: auto
+  middle_flow_depth: 4
+  exit_flow_filters: false
+  classifier_type: segment
+  classifier_kernel_size_list: [5]
+
+
+xception_seg_long:
+  output_stride: 3
+  entry_flow_prestrides: [1,1]
+  entry_flow_prefilters_stack: [32,64]
+  entry_flow_filters_stack: [128]
+  entry_flow_strides_stack: [3]
+  middle_flow_filters: auto
+  middle_flow_depth: 8
+  exit_flow_filters: false
+  classifier_type: segment
+  classifier_kernel_size_list: [3,1]
+
+
+xception_seg_no-sep:
+  output_stride: 3
+  entry_flow_prestrides: [1,1]
+  entry_flow_prefilters_stack: [32,64]
+  entry_flow_filters_stack: [128]
+  entry_flow_strides_stack: [3]
+  entry_flow_seperable: false
+  middle_flow_filters: auto
+  middle_flow_depth: 1
+  middle_flow_seperable: false
+  exit_flow_filters: false
+  classifier_type: segment
+  classifier_kernel_size_list: [3,1]
+
+
+xmid_os16_mf16:
+  output_stride: 16
+  keep_mid_step: true
+  entry_flow_prestrides: [2,1]
+  entry_flow_prefilters_stack: [32,64]
+  entry_flow_filters_stack: [128,256]
+  middle_flow_filters: auto
+  middle_flow_depth: 16
+  exit_flow_filters_in: auto
+  exit_flow_filters: 256
+  exit_flow_postfilters_stack: [512,512]
+
+
+xlight_os8_mf16:
+  output_stride: 8
+  keep_mid_step: true
+  entry_flow_prestrides: [2,1]
+  entry_flow_prefilters_stack: [32,64]
+  entry_flow_filters_stack: [128]
+  middle_flow_filters: auto
+  middle_flow_depth: 16
+  exit_flow_filters_in: auto
+  exit_flow_filters: 256
+  exit_flow_postfilters_stack: [512,512,728]
+
+
+xlight_os8_mf16_seg:
+  output_stride: 8
+  keep_mid_step: true
+  entry_flow_prestrides: [2,1]
+  entry_flow_prefilters_stack: [32,64]
+  entry_flow_filters_stack: [128]
+  middle_flow_filters: auto
+  middle_flow_depth: 16
+  exit_flow_filters_in: auto
+  exit_flow_filters: 256
+  exit_flow_postfilters_stack: [512,512,728]
+  classifier_type: segment
+  classifier_kernel_size_list: [3,1]
+
+
+xlight_os8_mf4:
+  output_stride: 8
+  keep_mid_step: true
+  entry_flow_prestrides: [2,1]
+  entry_flow_prefilters_stack: [32,64]
+  entry_flow_filters_stack: [128]
+  middle_flow_filters: auto
+  middle_flow_depth: 4
+  exit_flow_filters_in: auto
+  exit_flow_filters: 256
+  exit_flow_postfilters_stack: [512,512,728]
+
+
+xlight_os4_mf16:
+  output_stride: 4
+  keep_mid_step: true
+  entry_flow_prestrides: [2,1]
+  entry_flow_prefilters_stack: [32,64]
+  entry_flow_filters_stack: [128]
+  middle_flow_filters: auto
+  middle_flow_depth: 16
+  exit_flow_filters_in: auto
+  exit_flow_filters: 256
+  exit_flow_postfilters_stack: [512,512,728]
+
+
+xlight_os4_mf4:
+  output_stride: 4
+  keep_mid_step: true
+  entry_flow_prestrides: [2,1]
+  entry_flow_prefilters_stack: [32,64]
+  entry_flow_filters_stack: [128]
+  middle_flow_filters: auto
+  middle_flow_depth: 4
+  exit_flow_filters_in: auto
+  exit_flow_filters: 256
+  exit_flow_postfilters_stack: [512,512,728]
+
+
+
+xtiny_os4_mf4:
+  output_stride: 4
+  keep_mid_step: true
+  entry_flow_init_stride: 1
+  entry_flow_prestrides: [2,1]
+  entry_flow_prefilters_stack: [32]
+  entry_flow_filters_stack: [64]
+  middle_flow_filters: auto
+  middle_flow_depth: 4
+  exit_flow_filters_in: auto
+  exit_flow_filters: 128
+  exit_flow_postfilters_stack: [256]
+
+
