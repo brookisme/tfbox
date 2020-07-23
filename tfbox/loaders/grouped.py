@@ -1,12 +1,12 @@
 import os
-os.environ['IMAGE_KIT_BAND_ORDERING']='last'
+os.environ['IMAGE_BOX_BAND_ORDERING']='last'
 import re
 import random
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.utils import to_categorical
-from image_kit.handler import InputTargetHandler,BAND_ORDERING
+from imagebox.handler import InputTargetHandler,BAND_ORDERING
 
 BATCH_SIZE=6
 GROUP_COL='group_id'

@@ -1,6 +1,14 @@
 from distutils.core import setup
 setup(
   name = 'tfbox',
+  packages=[
+    'tfbox',
+    'tfbox.callbacks',
+    'tfbox.loaders',
+    'tfbox.losses',
+    'tfbox.nn',
+    'tfbox.utils'
+  ],
   package_dir = {
     'tfbox': 'tfbox',
     'tfbox.callbacks': 'tfbox/callbacks',
@@ -9,7 +17,6 @@ setup(
     'tfbox.nn': 'tfbox/nn',
     'tfbox.utils': 'tfbox/utils'
   },
-  packages=['tfbox','tfbox.nn','tfbox.utils'],
   version = '0.0.0.1',
   description = 'tfbox: a collection of models and tools for tensorflow',
   author = 'Brookie Guzder-Williams',
