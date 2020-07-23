@@ -11,11 +11,10 @@ from image_kit.handler import InputTargetHandler,BAND_ORDERING
 BATCH_SIZE=6
 GROUP_COL='group_id'
 INDEX_ERROR='requested batch {} of {} batches'
-STRIP_GS='surface-water-public'
 DATA_ROOT='data'
-GS='gs://'
-INPUT_COL='s1_path'
-TARGET_COL='gsw_path'
+REMOTE_HEAD=r'^(gs|http|https)://'
+INPUT_COL='input'
+TARGET_COL='target'
 WINDOW_INDEX_COL='window_index'
 WINDOW_COL='window'
 WINDOWED_GROUP_COL='__win_group_id'
@@ -33,7 +32,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
             augment=True,
             shuffle=True,
             limit=None,
-            strip_gs=STRIP_GS,
+            localize=None,
             data_root=DATA_ROOT,
             input_column=INPUT_COL,
             target_column=TARGET_COL,
@@ -53,7 +52,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
         self.nb_classes=nb_classes
         self.batch_size=batch_size
         self.shuffle=shuffle
-        self.strip_gs=strip_gs
+        self.localize=localize
         self.onehot=onehot
         self._set_columns(
             input_column,
@@ -232,7 +231,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
         if limit:
             self.idents=self.idents[:limit*self.batch_size]
             data=data.copy()[data[self.group_column].isin(self.idents)]
-        if self.strip_gs:
+        if self.localize:
             data.loc[:,self.input_column]=data[self.input_column].apply(self._localize_path)
             data.loc[:,self.target_column]=data[self.target_column].apply(self._localize_path)
         self.data=data
@@ -267,9 +266,11 @@ class GroupedSeq(tf.keras.utils.Sequence):
 
     
     def _localize_path(self,path):
-        path=re.sub(f'^{GS}','',path)
-        if isinstance(self.strip_gs,str):
-            path=re.sub(f'^{self.strip_gs}',self.data_root,path)
+        path=re.sub(REMOTE_HEAD,'',path)
+        if isinstance(self.localize,str):
+            path=re.sub(f'^{self.localize}','',path)
+        if self.data_root:
+            path=f'{self.data_root}/{path}'
         return path
 
 
