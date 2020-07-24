@@ -269,8 +269,8 @@ class GroupedSeq(tf.keras.utils.Sequence):
         path=re.sub(REMOTE_HEAD,'',path)
         if isinstance(self.localize,str):
             path=re.sub(f'^{self.localize}/','',path)
-        if self.data_root:
-            path=f'{self.data_root}/{path}'
+            if self.data_root:
+                path=f'{self.data_root}/{path}'
         return path
 
 
