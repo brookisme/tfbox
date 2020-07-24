@@ -11,7 +11,7 @@ from imagebox.handler import InputTargetHandler,BAND_ORDERING
 BATCH_SIZE=6
 GROUP_COL='group_id'
 INDEX_ERROR='requested batch {} of {} batches'
-DATA_ROOT=False
+LOCAL_DATA_ROOT=False
 REMOTE_HEAD=r'^(gs|http|https)://'
 INPUT_COL='input'
 TARGET_COL='target'
@@ -33,7 +33,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
             shuffle=True,
             limit=None,
             localize=None,
-            data_root=DATA_ROOT,
+            local_data_root=LOCAL_DATA_ROOT,
             input_column=INPUT_COL,
             target_column=TARGET_COL,
             target_resolution=None,
@@ -61,7 +61,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
             has_windows,
             window_index_column,
             window_column)
-        self._set_data_root(data_root)
+        self._set_local_data_root(local_data_root)
         self._init_dataset(data,converters,limit)
         self.handler=InputTargetHandler(
             cropping=cropping,
@@ -216,6 +216,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
 
 
     def _init_dataset(self,data,converters,limit):
+        print('INITIALIZING DATA SET')
         if self.has_windows:
             converters=converters or {}
             converters[self.window_column]=eval
@@ -250,13 +251,13 @@ class GroupedSeq(tf.keras.utils.Sequence):
             return None
 
 
-    def _set_data_root(self,data_root):
-        if data_root is False:
-            self.data_root=False
-        elif isinstance(data_root,str):
-            self.data_root=data_root
+    def _set_local_data_root(self,local_data_root):
+        if local_data_root is False:
+            self.local_data_root=False
+        elif isinstance(local_data_root,str):
+            self.local_data_root=local_data_root
         else:
-            self.data_root=os.getcwd() 
+            self.local_data_root=os.getcwd() 
 
 
     def _sample_row(self,ident=None,data=None):
@@ -266,11 +267,13 @@ class GroupedSeq(tf.keras.utils.Sequence):
 
     
     def _localize_path(self,path):
-        path=re.sub(REMOTE_HEAD,'',path)
         if isinstance(self.localize,str):
-            path=re.sub(f'^{self.localize}/','',path)
-            if self.data_root:
-                path=f'{self.data_root}/{path}'
+            m=re.search(REMOTE_HEAD,path)
+            if m:
+                _,e=m.span()
+                path=re.sub(f'^{self.localize}/','',path[e:])
+                if self.local_data_root:
+                    path=f'{self.local_data_root}/{path}'
         return path
 
 
