@@ -11,7 +11,7 @@ from imagebox.handler import InputTargetHandler,BAND_ORDERING
 BATCH_SIZE=6
 GROUP_COL='group_id'
 INDEX_ERROR='requested batch {} of {} batches'
-DATA_ROOT='data'
+DATA_ROOT=False
 REMOTE_HEAD=r'^(gs|http|https)://'
 INPUT_COL='input'
 TARGET_COL='target'
