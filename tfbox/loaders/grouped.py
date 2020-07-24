@@ -216,7 +216,6 @@ class GroupedSeq(tf.keras.utils.Sequence):
 
 
     def _init_dataset(self,data,converters,limit):
-        print('INITIALIZING DATA SET')
         if self.has_windows:
             converters=converters or {}
             converters[self.window_column]=eval
