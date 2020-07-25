@@ -29,6 +29,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
             nb_classes,
             batch_size=BATCH_SIZE,
             converters={},
+            input_bands=None,
             augment=True,
             shuffle=True,
             limit=None,
@@ -64,6 +65,7 @@ class GroupedSeq(tf.keras.utils.Sequence):
         self._set_local_data_root(local_data_root)
         self._init_dataset(data,converters,limit)
         self.handler=InputTargetHandler(
+            input_bands=input_bands,
             cropping=cropping,
             float_cropping=float_cropping,
             size=size,
