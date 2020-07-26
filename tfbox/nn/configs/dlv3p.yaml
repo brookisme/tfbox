@@ -23,7 +23,8 @@ dlv3p-no_aspp:
 
 
 sw:
-  backbone: xception.xlight_os8_mf16
+  backbone: xception
+  backbone_config_string: xlight_os8_mf16
   upsample_mode: bilinear
   classifier_kernel_size_list: [3,1]
   aspp: true
@@ -35,7 +36,8 @@ sw:
 
 
 sw-no_aspp:
-  backbone: xception.xlight_os8_mf16
+  backbone: xception
+  backbone_config_string: xlight_os8_mf16
   upsample_mode: bilinear
   classifier_kernel_size_list: [3,1]
   aspp: false

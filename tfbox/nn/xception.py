@@ -33,13 +33,15 @@ class Xception(tf.keras.Model):
     #
     @staticmethod
     def from_config(
-            key_path=DEFAULT_KEY,
             cfig='xception',
+            key_path=DEFAULT_KEY,
+            cfig_dir=load.TFBOX,
             is_file_path=False,
             **kwargs):
         config=load.config(
             cfig=cfig,
             key_path=key_path,
+            cfig_dir=cfig_dir,
             is_file_path=is_file_path,
             **kwargs)
         print('XCEPTION:')

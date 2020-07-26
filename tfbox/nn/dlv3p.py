@@ -1,3 +1,4 @@
+from pprint import pprint
 import tensorflow as tf
 from tensorflow.keras import layers
 from . import xception as xcpt
@@ -18,7 +19,7 @@ class DLV3p(tf.keras.Model):
     # CONSTANTS
     #
     BACKBONES={
-        'xception':  { 'model': xcpt.Xception }
+        'xception': xcpt.Xception 
     }
     DEFAULT_KEY='sw'
     DEFAULTS=load.config(cfig='dlv3p',key_path=DEFAULT_KEY)
@@ -29,46 +30,43 @@ class DLV3p(tf.keras.Model):
     #
     @staticmethod
     def from_config(
-            key_path=DEFAULT_KEY,
             cfig='dlv3p',
+            key_path=DEFAULT_KEY,
             is_file_path=False,
+            cfig_dir=load.TFBOX,
             **kwargs):
         config=load.config(
             cfig=cfig,
             key_path=key_path,
+            cfig_dir=cfig_dir,
             is_file_path=is_file_path,
             **kwargs)
+        print('DLV3p:')
+        pprint(config)
         return DLV3p(**config)
 
 
 
     @staticmethod
-    def build_backbone(backbone,**kwargs):
-        model_key=cfig=key_path=None
-        if isinstance(backbone,str):
-            parts=backbone.split('.')
-            nb_parts=len(parts)
-            model_key=parts[0]
-            key_path=parts[-1]
-            if nb_parts==2:
-                cfig=model_key
-            else:
-                cfig=parts[1]
-            backbone=DLV3p.BACKBONES[model_key]
-        if isinstance(backbone,dict):
-            model=backbone['model']
-            cfig=model_key or backbone.get('config')
-            key_path=key_path or backbone.get('key_path')
-            is_file_path=backbone.get('is_file_path',False)
-            config=load.config(
-                cfig=cfig,
-                key_path=key_path,
-                is_file_path=is_file_path,
-                **kwargs)
+    def build_backbone(model_key=None,config_string=None,**kwargs):
+        cfig=key_path=cfig_dir=is_file_path=None
+        if config_string:
+            cfig, key_path, cfig_dir, is_file_path=load.parse_config_string(
+                config_string,
+                cfig=model_key)
+            if not model_key:
+                model_key=cfig
+        backbone=DLV3p.BACKBONES[model_key]
+        if cfig:
+            model=backbone.from_config(
+                    cfig=cfig,
+                    key_path=key_path,
+                    cfig_dir=cfig_dir,
+                    is_file_path=is_file_path,
+                    **kwargs)
         else:
-            model=backbone
-            config=kwargs
-        return model(**config)
+            model=backbone(**kwargs)
+        return model
 
 
 
@@ -78,6 +76,7 @@ class DLV3p(tf.keras.Model):
     def __init__(self,
             nb_classes,
             backbone=DEFAULTS['backbone'],
+            backbone_config_string=DEFAULTS.get('backbone_config_string',None),
             backbone_kwargs=DEFAULTS.get('backbone_kwargs',{}),
             aspp=DEFAULTS.get('aspp',True),
             aspp_cfig_key_path=DEFAULTS.get('aspp_cfig_key_path','aspp'),
@@ -104,7 +103,10 @@ class DLV3p(tf.keras.Model):
             classifier_act_config=DEFAULTS.get('classifier_act_config',{})):
         super(DLV3p, self).__init__()
         self.upsample_mode=upsample_mode or DLV3p.UPSAMPLE_MODE
-        self.backbone=DLV3p.build_backbone(backbone,**backbone_kwargs)
+        self.backbone=DLV3p.build_backbone(
+            model_key=backbone,
+            config_string=backbone_config_string,
+            **backbone_kwargs)
         self.nb_skips=self._nb_skips(nb_skips)
         self.classifier_position=classifier_position
         self.aspp=self._aspp(
@@ -138,6 +140,7 @@ class DLV3p(tf.keras.Model):
         elif self.backbone_reducer:
             x=self.backbone_reducer(x)
         skips.reverse()
+        for s in skips:
         for s, reducer, refines in zip(skips,self.skip_reducers,self.up_refinements):
             x=blocks.upsample(x,like=s)
             if reducer:
