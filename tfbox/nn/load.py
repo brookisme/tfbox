@@ -16,30 +16,63 @@ JSON_RGX='.json$'
 # I/0
 #
 def config(
-        cfig,
+        cfig=None,
         key_path=None,
-        is_file_path=False,
         cfig_dir=TFBOX,
+        is_file_path=False,
+        config_string=None,
         **kwargs):
+    """ load model configs
+    Args:
+        - cfig<str|dict|None>:
+            * <str>: 
+                - name (w/o '.yaml' ext) of config file
+                - file_path (see is_file_path below)
+            * <dict>: model config as dict
+            * None: requires config_string
+        - key_path<str>: 
+            dot-path for key in cfig-file containing the config
+        - cfig_dir<str>:
+            - tfbox,None,True: use tfbox config file (tfbox.nn.configs)
+            - False: current working directory
+            - Otherwise: directory path
+        - is_file_path<bool>:
+            - if true: cfig arg is the path to the config file
+        - config_string<str|None>:
+            - if config_string derive above args using `parse_config_string`
+        - kwargs: key-value args to update the loaded config
+    """
+    if config_string:
+        cfig, key_path, cfig_dir, is_file_path=parse_config_string(config_string,cfig=cfig)
     if isinstance(cfig,str):
         if not is_file_path:
-            parts=cfig.split('.')
-            name=parts[0]
-            key_path=key_path or parts[1:] or name
-            if isinstance(key_path,str):
-                key_path=[key_path]
-            cfig=f'{name}.yaml'
             if cfig_dir in [TFBOX,None,True]:
                 cfig_dir=CONFIGS_DIR
             if cfig_dir:
-                cfig=f'{cfig_dir}/{name}.yaml'
-        cfig=h.read_yaml(cfig)
+                cfig=f'{cfig_dir}/{cfig}'
+        cfig=h.read_yaml(f'{cfig}.yaml')
     if key_path:
+        if isinstance(key_path,str):
+            key_path=key_path.split('.')
         for k in key_path: cfig=cfig[k]
     cfig.update(kwargs)
     return cfig
 
 
 
+def parse_config_string(config_string,cfig=None):
+    key_path=cfig_dir=is_file_path=None
+    parts=config_string.split(':')
+    if cfig:
+        parts=[cfig]+parts
+    nb_parts=len(parts)
+    cfig=parts[0]
+    if nb_parts>1:
+        key_path=parts[1]
+        if nb_parts>2:
+            cfig_dir=parts[2]
+            if nb_parts>3:
+                is_file_path=str(parts[2]).lower()=='true'
+    return cfig, key_path, cfig_dir, is_file_path
 
 
