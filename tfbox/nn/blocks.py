@@ -103,7 +103,7 @@ class CBAD(keras.Model):
             if self.act: x=self.act(x)
         else:
             if self.act: x=self.act(x)
-            if training and self.do: x=self.do(x)            
+            if training and self.do: x=self.do(x)         
         return x
 
 
@@ -157,6 +157,8 @@ class CBADStack(keras.Model):
             filters_list=None,
             kernel_size_list=None,
             padding='same',
+            squeeze_excitation=False,
+            squeeze_excitation_ratio=16,
             residual=True,
             residual_act=True,
             seperable_residual=False,
@@ -196,6 +198,12 @@ class CBADStack(keras.Model):
             padding=padding,
             act_config=act_config,
             **conv_config)
+        if squeeze_excitation:
+            self.se=SqueezeExcitation(
+                filters,
+                ratio=squeeze_excitation_ratio)
+        else:
+            self.se=False
         self.residual=self._residual(
             residual,
             residual_act,
@@ -210,11 +218,11 @@ class CBADStack(keras.Model):
             res=x
         elif self.residual:
             res=self.residual(x)
-        else:
-            res=False
         for layer in self.stack:
             x=layer(x)
-        if res is not False:
+        if self.se:
+            x=self.se(x)
+        if self.residual:
             x=layers.add([res,x])
         return x
 
@@ -478,6 +486,82 @@ class CBADGroup(keras.Model):
                 filters=self.filters,
                 kernel_size=kernel_size,
                 **config)
+
+
+
+
+#
+# BLOCKS 
+#
+class SqueezeExcitation(keras.Model):
+    """ SqueezeExcitation
+    """
+
+
+    def __init__(self,filters,ratio=16,global_pooling='avg'):
+        super(SqueezeExcitation, self).__init__()
+        if global_pooling in ['max','gmp','global_max_pooling']:
+            self.gp=layers.GlobalMaxPooling2D()
+        else:
+            self.gp=layers.GlobalAveragePooling2D()
+        self.reduce=layers.Dense(filters//ratio,activation='relu')
+        self.expand=layers.Dense(filters,activation='sigmoid')
+
+
+    def __call__(self,x,training=False):
+        y=self.gp(x)
+        y=self.reduce(x)
+        y=self.expand(x)
+        return layers.multiply([x,y])
+
+
+
+
+class Residual(keras.Model):
+    """ Residual
+    """
+    IDENTITY='identity'
+
+
+    def __init__(self,
+            block,
+            identity=False,
+            filters=None,
+            residual=True,
+            **config):
+        self.block=block
+        self.residual=self._residual(
+            residual,
+            identity,
+            filters,
+            config)
+
+
+    def __call__(self,x,training=False):
+        if self.residual==Residual.IDENTITY:
+            res=x
+        elif self.residual:
+            res=self.residual(x)
+        else:
+            res=False
+        if res:
+            x=layers.add([res,self.block(x)])
+        return x
+
+
+    #
+    # INTERNAL
+    #
+    def _residual(self,residual,identity,filters,config):
+        if residual:
+            if identity:
+                residual=Residual.IDENTITY
+            else:
+                residual=CBAD(
+                    filters=filters,
+                    kernel_size=1,
+                    **config)
+        return residual
 
 
 
