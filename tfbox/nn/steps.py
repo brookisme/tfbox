@@ -1,3 +1,4 @@
+from pprint import pprint
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -113,9 +114,9 @@ class Steps(tf.keras.Model):
                 residual_list):
             blk=blocks.CBADStack(
                 filters=f,
-                strides=s,
+                output_stride=s,
                 kernel_size=k,
-                depth=d,
+                depth=depth,
                 dilation_rate=d,
                 squeeze_excitation=se,
                 residual=res,

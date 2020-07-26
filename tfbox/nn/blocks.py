@@ -167,7 +167,6 @@ class CBADStack(keras.Model):
             act=True,
             act_config={},
             dilation_rate=1,
-            strides=1,
             output_stride=1,
             max_pooling=False,
             keep_output=False,
