@@ -101,3 +101,47 @@ class StrideManager(object):
         else:
             self.nb_keepers=0
 
+
+
+def is_trainable(name=None,index=None,matches=[],indices=[],searches=[],excludes=[]):
+    if name:
+        if name in matches:
+            return True
+        else:
+            found=next((s for s in searches if s in name),False)
+            if found:
+                exclude=next((e for e in excludes if e in name),False)
+                if not exclude:
+                    return True
+    if index:
+        return index in indices
+    
+
+def set_trainable(
+        model,
+        matches=[],
+        indices=[],
+        searches=[],
+        excludes=[],
+        return_trainables=False,
+        noisy=False):
+    if return_trainables:
+        trainables=[]
+    for l in model.layers:
+        l.trainable=is_trainable(
+            name=l.name,
+            matches=matches,
+            indices=indices,
+            searches=searches,
+            excludes=excludes)
+        if return_trainables:
+            trainables.append(l)
+        if noisy and l.trainable:
+            print(l.name)
+    if return_trainables:
+        return trainables
+
+
+
+
+
