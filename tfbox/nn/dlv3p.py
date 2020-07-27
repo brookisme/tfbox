@@ -96,13 +96,16 @@ class DLV3p(tf.keras.Model):
             up_refinements_filters=DEFAULTS.get('up_refinements_filters',256),
             up_refinements_depth=DEFAULTS.get('up_refinements_depth',2),
             upsample_mode=DEFAULTS['upsample_mode'],
+            target_rescale=DEFAULTS.get('target_rescale',1),
             classifier_position=DEFAULTS.get('classifier_position',BEFORE_UP),
             classifier_kernel_size_list=DEFAULTS['classifier_kernel_size_list'],
             classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
             classifier_act=DEFAULTS.get('classifier_act',True),
             classifier_act_config=DEFAULTS.get('classifier_act_config',{})):
         super(DLV3p, self).__init__()
+        self._upsample_scale=None
         self.upsample_mode=upsample_mode or DLV3p.UPSAMPLE_MODE
+        self.target_rescale=target_rescale
         self.backbone=DLV3p.build_backbone(
             model_key=backbone,
             config_string=backbone_config_string,
@@ -140,9 +143,8 @@ class DLV3p(tf.keras.Model):
         elif self.backbone_reducer:
             x=self.backbone_reducer(x)
         skips.reverse()
-        for s in skips:
         for s, reducer, refines in zip(skips,self.skip_reducers,self.up_refinements):
-            x=blocks.upsample(x,like=s)
+            x=blocks.upsample(x,like=s,mode=self.upsample_mode)
             if reducer:
                 s=reducer(s)
             x=tf.concat([x,s],axis=BAND_AXIS)
@@ -150,7 +152,9 @@ class DLV3p(tf.keras.Model):
                 x=rfine(x)
         if self.classifier_position==DLV3p.BEFORE_UP:
             x=self.classifier(x)
-        x=blocks.upsample(x,like=inputs,interpolation=self.upsample_mode)
+        x=blocks.upsample(
+            x,
+            scale=self._scale(x,inputs),mode=self.upsample_mode)
         if self.classifier_position==DLV3p.AFTER_UP:
             x=self.classifier(x)
         return x
@@ -208,6 +212,13 @@ class DLV3p(tf.keras.Model):
         else:
             _refinements=[False for _ in range(self.nb_skips)]
         return _refinements
+
+
+    def _scale(self,x,like):
+        if not self._upsample_scale:
+            shape=like.shape
+            self._upsample_scale=self.target_rescale*shape[-2]/x.shape[-2]
+        return self._upsample_scale
 
 
     def _get_refinements(self,filters,depth):

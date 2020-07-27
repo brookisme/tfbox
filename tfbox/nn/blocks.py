@@ -38,14 +38,28 @@ def get_activation(act,**config):
     return act
 
 
-def upsample(x,scale=None,like=None,shape=None,interpolation='bilinear'):
+def upsample(
+        x,
+        scale=None,
+        like=None,
+        shape=None,
+        rescale=1,
+        mode='bilinear',
+        allow_resize=True,
+        force_resize=False):
     if scale is None:
         if shape is None:
             shape=like.shape
-        scale=int(shape[-2]/x.shape[-2])
-    return layers.UpSampling2D(
-        size=(scale,scale),
-        interpolation=interpolation)(x)
+        scale=rescale*shape[2]/x.shape[2]
+    if allow_resize and (force_resize or (scale!=int(scale))):
+        h=round(x.shape[1]*scale)
+        w=round(x.shape[2]*scale)
+        return tf.image.resize(x,(h,w),method=mode)
+    else:
+        scale=int(scale)  
+        return layers.UpSampling2D(
+            size=(scale,scale),
+            interpolation=mode)(x)
 
 
 #
