@@ -77,8 +77,12 @@ class Xception(tf.keras.Model):
             classifier_kernel_size_list=DEFAULTS.get('classifier_kernel_size_list'),
             classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
             keep_mid_step=DEFAULTS.get('keep_mid_step',True),
-            skip_indices=DEFAULTS.get('skip_indices',True)):
+            skip_indices=DEFAULTS.get('skip_indices',True),
+            name=None,
+            named_layers=True):
         super(Xception, self).__init__()
+        self.model_name=name
+        self.named_layers=named_layers
         if dropout:
            entry_flow_dropout=dropout
            middle_flow_dropout=dropout
@@ -126,7 +130,9 @@ class Xception(tf.keras.Model):
                 filters_list=classifier_filters_list,
                 kernel_size_list=classifier_kernel_size_list,
                 output_act=classifier_act,
-                output_act_config=classifier_act_config)
+                output_act_config=classifier_act_config,
+                name=self._layer_name('classifier'),
+                named_layers=self.named_layers)
         else:
             self.classifier=False
 
@@ -148,19 +154,26 @@ class Xception(tf.keras.Model):
     #
     # INTERNAL
     #
+    def _layer_name(self,group=None,index=None):
+        name_path=[p for p in [self.model_name,group] if p]
+        return blocks.layer_name(*name_path,index=index,named=self.named_layers)
+
+
     def _entry_flow(self,prestrides,prefilters,filters,strides,seperable,dropout):
         _layers=[]
-        for s,f in zip(prestrides,prefilters):
+        for i,(s,f) in enumerate(zip(prestrides,prefilters)):
             _layers.append(blocks.CBAD(
                 filters=f,
                 strides=self.stride_manager.strides(s),
                 dilation_rate=self.stride_manager.dilation_rate,
                 dropout=dropout,
-                keep_output=self.stride_manager.keep_index))
+                keep_output=self.stride_manager.keep_index,
+                name=self._layer_name('entry',i),
+                named_layers=self.named_layers))
             self.stride_manager.step(s)
         if not strides:
             strides=[2]*len(filters)
-        for f,s in zip(filters,strides):
+        for j,(f,s) in enumerate(zip(filters,strides)):
             _layers.append(blocks.CBADStack(
                     seperable=seperable,
                     dropout=dropout,
@@ -168,7 +181,9 @@ class Xception(tf.keras.Model):
                     filters=f,
                     output_stride=self.stride_manager.strides(s),
                     dilation_rate=self.stride_manager.dilation_rate,
-                    keep_output=self.stride_manager.keep_index ))
+                    keep_output=self.stride_manager.keep_index,
+                    name=self._layer_name('entry',i+j),
+                    named_layers=self.named_layers))
             self.stride_manager.step(s)
         return _layers, filters[-1]
 
@@ -177,14 +192,16 @@ class Xception(tf.keras.Model):
         _layers=[]
         if filters==Xception.AUTO:
             filters=prev_filters
-        for _ in range(flow_depth):
+        for i in range(flow_depth):
             _layers.append(blocks.CBADStack(
                 seperable=seperable,
                 dropout=dropout,
                 depth=3,
                 filters=filters,
                 dilation_rate=self.stride_manager.dilation_rate,
-                residual=blocks.CBADStack.IDENTITY ))
+                residual=blocks.CBADStack.IDENTITY,
+                name=self._layer_name('middle',i),
+                named_layers=self.named_layers))
         return _layers, filters
 
 
@@ -200,14 +217,18 @@ class Xception(tf.keras.Model):
                 filters_in=filters_in,
                 output_stride=self.stride_manager.strides(),
                 dilation_rate=self.stride_manager.dilation_rate,
-                keep_output=False ))
+                keep_output=False,
+                name=self._layer_name('exit',0),
+                named_layers=self.named_layers))
         self.stride_manager.step()
-        for f in postfilters:
+        for i,f in enumerate(postfilters):
             _layers.append(blocks.CBAD(
                 filters=f,
                 seperable=seperable,
                 dropout=dropout,
-                dilation_rate=self.stride_manager.dilation_rate))
+                dilation_rate=self.stride_manager.dilation_rate,
+                name=self._layer_name('exit',i+1),
+                named_layers=self.named_layers))
         if postfilters:
             filters=postfilters[-1]
         else:

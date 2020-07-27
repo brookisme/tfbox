@@ -62,6 +62,15 @@ def upsample(
             interpolation=mode)(x)
 
 
+def layer_name(*name_path,index=None,named=True):
+    if named and name_path:
+        name_path=[p for p in name_path if p] 
+        name='.'.join(name_path)
+        if index is not None:
+            name=f'{name}-{index}'
+        return name
+
+
 #
 # GENERAL BLOCKS 
 #
@@ -85,12 +94,18 @@ class CBAD(keras.Model):
             dropout_config={},
             act_last=False,
             keep_output=False,
+            name=None,
+            named_layers=True,
             **conv_config):
         super(CBAD, self).__init__()
+        self.block_name=name or self.name
+        self.named_layers=named_layers
         if seperable:
             _conv=layers.SeparableConv2D
+            cname='sepconv2d'
         else:
             _conv=layers.Conv2D
+            cname='conv2d'
         if dilation_rate>1:
             strides=1
         if kernel_size in [1,(1,1)]:
@@ -101,6 +116,7 @@ class CBAD(keras.Model):
             padding=padding,
             dilation_rate=dilation_rate,
             strides=strides,
+            name=self._layer_name(cname),
             **conv_config)
         self.bn=self._batch_norm(batch_norm)
         self.act=self._activation(act,act_config)
@@ -124,15 +140,19 @@ class CBAD(keras.Model):
     #
     # INTERNAL
     #
+    def _layer_name(self,name):
+        return layer_name(*[self.block_name,name],named=self.named_layers)
+
+
     def _batch_norm(self,batch_norm):
         if batch_norm:
-            bn=layers.BatchNormalization()
+            bn=layers.BatchNormalization(name=self._layer_name('batch_norm'))
         return bn      
 
 
     def _activation(self,act,config):
         if act:
-            act=get_activation(act,**config)
+            act=get_activation(act,name=self._layer_name('activation'),**config)
         return act
 
 
@@ -140,12 +160,8 @@ class CBAD(keras.Model):
         if dropout:
             if dropout is True:
                 dropout=DEFAULT_DROPOUT_RATE
-            dropout=layers.Dropout(dropout,**config)
+            dropout=layers.Dropout(dropout,name=self._layer_name('dropout'),**config)
             return dropout
-
-
-
-
 
 
 
@@ -184,8 +200,14 @@ class CBADStack(keras.Model):
             output_stride=1,
             max_pooling=False,
             keep_output=False,
+            name=None,
+            named_layers=True,
+            layers_name='cb',
             **conv_config):
         super(CBADStack, self).__init__()
+        self.block_name=name or self.name
+        self.named_layers=named_layers
+        self.layers_name=layers_name
         if filters_list:
             depth=len(filters_list)
         elif kernel_size_list:
@@ -297,6 +319,10 @@ class CBADStack(keras.Model):
             return False
 
 
+    def _layer_name(self,name,index=None):
+        return layer_name(*[self.block_name,name],index=index,named=self.named_layers)
+
+
     def _residual(self,residual,residual_act,filters,output_stride):
         if residual and (residual!=CBADStack.IDENTITY):
             if not residual_act:
@@ -309,9 +335,10 @@ class CBADStack(keras.Model):
                 strides=output_stride,
                 seperable=self.seperable_residual,
                 act=act,
+                name=self._layer_name('residual'),
+                named_layers=self.named_layers,
                 **self.shared_config)
         return residual
-
 
     
     def _build_stack(self,output_stride):
@@ -328,9 +355,13 @@ class CBADStack(keras.Model):
                 strides=strides,
                 seperable=self.seperable,
                 act=self.act,
+                name=self._layer_name(self.layers_name,index=i),
+                named_layers=self.named_layers,
                 **self.shared_config))
             if (i==last_layer_index) and self.max_pooling_config:
-                _layers.append(layers.MaxPooling2D(**self.max_pooling_config))
+                _layers.append(layers.MaxPooling2D(
+                    self._layer_name('max_pooling'),
+                    **self.max_pooling_config))
         return _layers
 
 
@@ -629,8 +660,12 @@ class SegmentClassifier(keras.Model):
             output_act_config={},
             seperable_preclassification=False,
             residual_preclassification=False,
+            name=None,
+            named_layers=True,
             **stack_config):
         super(SegmentClassifier, self).__init__()
+        self.block_name=name or self.name
+        self.named_layers=named_layers
         kernel_size_list=self._kernel_size_list(
             kernel_size_list,
             kernel_size,
@@ -646,6 +681,8 @@ class SegmentClassifier(keras.Model):
                 kernel_size_list=kernel_size_list[:-1],
                 seperable=seperable_preclassification,
                 residual=residual_preclassification,
+                name=self._layer_name('stack'),
+                named_layers=self.named_layers,
                 **stack_config)
         else:
             self.preclassifier=False
@@ -655,7 +692,9 @@ class SegmentClassifier(keras.Model):
                 filters=filters_list[-1],
                 kernel_size=kernel_size_list[-1],
                 act=act,
-                act_config=output_act_config)
+                act_config=output_act_config,
+                name=self.block_name,
+                named_layers=self.named_layers)
 
 
 
@@ -669,6 +708,10 @@ class SegmentClassifier(keras.Model):
     #
     # INTERNAL
     #
+    def _layer_name(self,name,index=None):
+        return layer_name(*[self.block_name,name],index=index,named=self.named_layers)
+
+
     def _filters_list(self,filters_list,filters,nb_classes,depth):
         if filters_list:
             if filters_list[-1]!=nb_classes:
