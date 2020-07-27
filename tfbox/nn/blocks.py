@@ -398,10 +398,16 @@ class CBADGroup(keras.Model):
             padding='same',
             out_config={},
             keep_output=False,
+            name=None,
+            named_layers=True,
+            layers_name='cbad',
             **conv_config):
         super(CBADGroup, self).__init__()
         if padding is not 'same':
             raise NotImplementedError('currently only accepts padding=same')
+        self.block_name=name or self.name
+        self.named_layers=named_layers
+        self.layers_name=layers_name
         self._set_config(
                 kernel_size_list,
                 dilation_rate_list,
@@ -437,6 +443,10 @@ class CBADGroup(keras.Model):
     #
     # INTERNAL
     #
+    def _layer_name(self,name,index=None):
+        return layer_name(*[self.block_name,name],index=index,named=self.named_layers)
+
+
     def _call_group(self,x):
         _x=[]
         for layer in self.group:
@@ -487,7 +497,8 @@ class CBADGroup(keras.Model):
                 filters=self.hidden_filters,
                 kernel_size=1, 
                 strides=1,
-                use_bias=False
+                use_bias=False,
+                name=self._layer_name('global_pooling'),
             ))
             return _layers
 
@@ -502,7 +513,9 @@ class CBADGroup(keras.Model):
                 filters=self.hidden_filters,
                 kernel_size=1,
                 act=act,
-                act_config=self.act_config
+                act_config=self.act_config,
+                name=self._layer_name('residual',index=i),
+                named_layers=self.named_layers,
                 **self.shared_config)
         return residual
 
@@ -516,6 +529,8 @@ class CBADGroup(keras.Model):
                 dilation_rate=d,
                 act=self.act,
                 act_config=self.act_config,
+                name=self._layer_name(self.layers_name,index=i),
+                named_layers=self.named_layers,
                 **self.shared_config))
         return _layers       
 
@@ -529,6 +544,8 @@ class CBADGroup(keras.Model):
             return CBAD(
                 filters=self.filters,
                 kernel_size=kernel_size,
+                name=self._layer_name('out_conv'),
+                named_layers=self.named_layers,
                 **config)
 
 

@@ -205,6 +205,8 @@ class DLV3p(tf.keras.Model):
             return blocks.ASPP(
                     cfig_key_path=cfig_key_path,
                     cfig=cfig,
+                    name=self._layer_name('aspp'),
+                    named_layers=self.named_layers,
                     **config)
 
 
@@ -263,6 +265,7 @@ class DLV3p(tf.keras.Model):
                     filters=filters,
                     kernel_size=kernel_size,
                     name=self._layer_name(group,index=index),
+                    named_layers=self.named_layers,
                     **(config or {}))
 
 
