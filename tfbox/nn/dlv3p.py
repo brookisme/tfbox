@@ -101,14 +101,26 @@ class DLV3p(tf.keras.Model):
             classifier_kernel_size_list=DEFAULTS['classifier_kernel_size_list'],
             classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
             classifier_act=DEFAULTS.get('classifier_act',True),
-            classifier_act_config=DEFAULTS.get('classifier_act_config',{})):
+            classifier_act_config=DEFAULTS.get('classifier_act_config',{}),            
+            backbone_name=DEFAULTS.get('backbone_name',True),
+            name=DEFAULTS.get('name',None),
+            named_layers=DEFAULTS.get('named_layers',True),
+            **step_kwargs):
         super(DLV3p, self).__init__()
+        self.model_name=name
+        self.named_layers=named_layers
+        if (backbone_name is True) and isinstance(backbone,str):
+            self.backbone_name=backbone
+        else:
+            self.backbone_name=backbone_name
         self._upsample_scale=None
         self.upsample_mode=upsample_mode or DLV3p.UPSAMPLE_MODE
         self.target_rescale=target_rescale
         self.backbone=DLV3p.build_backbone(
             model_key=backbone,
             config_string=backbone_config_string,
+            name=self.backbone_name,
+            named_layers=self.named_layers,
             **backbone_kwargs)
         self.nb_skips=self._nb_skips(nb_skips)
         self.classifier_position=classifier_position
@@ -133,7 +145,9 @@ class DLV3p(tf.keras.Model):
             filters_list=classifier_filters_list,
             kernel_size_list=classifier_kernel_size_list,
             output_act=classifier_act,
-            output_act_config=classifier_act_config)
+            output_act_config=classifier_act_config,
+            name=self._layer_name('classifier'),
+            named_layers=self.named_layers)
 
 
     def __call__(self, inputs, training=False):
@@ -163,6 +177,13 @@ class DLV3p(tf.keras.Model):
     #
     # INTERNAL
     #
+    def _layer_name(self,group=None,index=None):
+        return blocks.layer_name(
+            *[self.model_name,group],
+            index=index,
+            named=self.named_layers)
+
+
     def _nb_skips(self,nb_skips):
         if not nb_skips:
             try:
@@ -194,9 +215,11 @@ class DLV3p(tf.keras.Model):
             if filters and self.nb_skips:
                 filters_list=[filters]*self.nb_skips
         if filters_list:
-            _reducers=[self._get_conv(f) for f in filters_list]
+            _reducers=[
+                self._get_conv(f,group='skip-reducer',index=i) 
+                for i,f in enumerate(filters_list)]
         else:
-            _reducers=[False for _ in range(self.nb_skips)]
+            _reducers=[False]*self.nb_skips
         return _reducers
 
 
@@ -208,9 +231,11 @@ class DLV3p(tf.keras.Model):
             if filters and self.nb_skips:
                 filters_list=[filters]*self.nb_skips
         if filters_list:
-            _refinements=[self._get_refinements(f,depth) for f in filters_list]
+            _refinements=[
+                self._get_refinements(f,depth,index=i) 
+                for i,f in enumerate(filters_list)]
         else:
-            _refinements=[False for _ in range(self.nb_skips)]
+            _refinements=[False]*self.nb_skips
         return _refinements
 
 
@@ -221,18 +246,23 @@ class DLV3p(tf.keras.Model):
         return self._upsample_scale
 
 
-    def _get_refinements(self,filters,depth):
-        return [ self._get_conv(filters,kernel_size=3) for _ in range(depth) ]
+    def _get_refinements(self,filters,depth,index):
+        return [ 
+            self._get_conv(filters,kernel_size=3,group='refinements',index=f'{index}.{j}') 
+            for j in range(depth) ]
 
 
     def _get_conv(self,
             filters,
             kernel_size=1,
+            group=None,
+            index=None,
             config={}):
         if filters:
             return blocks.CBAD(
                     filters=filters,
                     kernel_size=kernel_size,
+                    name=self._layer_name(group,index=index),
                     **(config or {}))
 
 
