@@ -202,7 +202,7 @@ class CBADStack(keras.Model):
             keep_output=False,
             name=None,
             named_layers=True,
-            layers_name='cb',
+            layers_name='cbad',
             **conv_config):
         super(CBADStack, self).__init__()
         self.block_name=name or self.name

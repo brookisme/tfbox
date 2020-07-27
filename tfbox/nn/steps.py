@@ -58,8 +58,12 @@ class Steps(tf.keras.Model):
             classifier_act_config=DEFAULTS.get('classifier_act_config',{}),
             classifier_kernel_size_list=DEFAULTS.get('classifier_kernel_size_list'),
             classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
+            name=DEFAULTS.get('name',None),
+            named_layers=DEFAULTS.get('named_layers',True),
             **step_kwargs):
         super(Steps, self).__init__()
+        self.model_name=name
+        self.named_layers=named_layers
         self.nb_steps=len(filters_list)
         self.steps=self._steps(
             filters_list,
@@ -79,7 +83,9 @@ class Steps(tf.keras.Model):
                 filters_list=classifier_filters_list,
                 kernel_size_list=classifier_kernel_size_list,
                 output_act=classifier_act,
-                output_act_config=classifier_act_config)
+                output_act_config=classifier_act_config,
+                name=self._layer_name('classifier'),
+                named_layers=self.named_layers)
         else:
             self.classifier=False
 
@@ -96,6 +102,13 @@ class Steps(tf.keras.Model):
     #
     # INTERNAL
     #
+    def _layer_name(self,group=None,index=None):
+        return blocks.layer_name(
+            *[self.model_name,group],
+            index=index,
+            named=self.named_layers)
+
+
     def _steps(self,
             filters_list,
             strides_list,
@@ -106,14 +119,14 @@ class Steps(tf.keras.Model):
             residual_list,
             step_config):
         _layers=[]
-        for f,s,k,depth,d,se,res in zip(
+        for i,(f,s,k,depth,d,se,res) in enumerate(zip(
                 filters_list,
                 strides_list,
                 kernel_size_list,
                 depth_list,
                 dilation_rate_list,
                 squeeze_excitation_list,
-                residual_list):
+                residual_list)):
             blk=blocks.CBADStack(
                 filters=f,
                 output_stride=s,
@@ -122,6 +135,8 @@ class Steps(tf.keras.Model):
                 dilation_rate=d,
                 squeeze_excitation=se,
                 residual=res,
+                name=self._layer_name(group='step',index=i),
+                named_layers=self.named_layers,
                 **step_config)
             _layers.append(blk)
         return _layers

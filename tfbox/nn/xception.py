@@ -78,8 +78,8 @@ class Xception(tf.keras.Model):
             classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
             keep_mid_step=DEFAULTS.get('keep_mid_step',True),
             skip_indices=DEFAULTS.get('skip_indices',True),
-            name=None,
-            named_layers=True):
+            name=DEFAULTS.get('name',None),
+            named_layers=DEFAULTS.get('named_layers',True)):
         super(Xception, self).__init__()
         self.model_name=name
         self.named_layers=named_layers
@@ -155,8 +155,10 @@ class Xception(tf.keras.Model):
     # INTERNAL
     #
     def _layer_name(self,group=None,index=None):
-        name_path=[p for p in [self.model_name,group] if p]
-        return blocks.layer_name(*name_path,index=index,named=self.named_layers)
+        return blocks.layer_name(
+            *[self.model_name,group],
+            index=index,
+            named=self.named_layers)
 
 
     def _entry_flow(self,prestrides,prefilters,filters,strides,seperable,dropout):
