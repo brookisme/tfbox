@@ -104,6 +104,10 @@ class StrideManager(object):
 
 
 def is_trainable(name=None,index=None,matches=[],indices=[],searches=[],excludes=[]):
+    matches=_as_list(matches)
+    indices=_as_list(indices)
+    searches=_as_list(searches)
+    excludes=_as_list(excludes)
     if name:
         if name in matches:
             return True
@@ -125,21 +129,40 @@ def set_trainable(
         excludes=[],
         return_trainables=False,
         noisy=False):
-    if return_trainables:
-        trainables=[]
-    for l in model.layers:
-        l.trainable=is_trainable(
-            name=l.name,
-            matches=matches,
-            indices=indices,
-            searches=searches,
-            excludes=excludes)
+    if matches or indices or searches:
         if return_trainables:
-            trainables.append(l)
-        if noisy and l.trainable:
-            print(l.name)
-    if return_trainables:
-        return trainables
+            trainables=[]
+        for i,l in enumerate(model.layers):
+            l.trainable=is_trainable(
+                name=l.name,
+                index=i,
+                matches=matches,
+                indices=indices,
+                searches=searches,
+                excludes=excludes)
+            if return_trainables:
+                trainables.append(l)
+            if noisy and l.trainable:
+                print(l.name)
+        if return_trainables:
+            return trainables
+
+
+
+#
+# INTERNAL
+#
+def _as_list(value):
+    if value in [None,False]:
+        value=[]
+    elif not isinstance(value,list):
+        value=[value]
+    return value
+
+
+
+
+
 
 
 
