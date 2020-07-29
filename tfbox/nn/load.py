@@ -43,7 +43,7 @@ def config(
         - kwargs: key-value args to update the loaded config
     """
     if config_string:
-        cfig, key_path, cfig_dir, is_file_path=parse_config_string(
+        cfig, key_path, is_file_path=parse_config_string(
             config_string,
             cfig=cfig)
     if isinstance(cfig,str):
@@ -63,7 +63,7 @@ def config(
 
 
 def parse_config_string(config_string,cfig=None):
-    key_path=cfig_dir=is_file_path=None
+    key_path=is_file_path=None
     parts=config_string.split(':')
     if cfig:
         parts=[cfig]+parts
@@ -72,9 +72,7 @@ def parse_config_string(config_string,cfig=None):
     if nb_parts>1:
         key_path=parts[1]
         if nb_parts>2:
-            cfig_dir=parts[2]
-            if nb_parts>3:
-                is_file_path=str(parts[2]).lower()=='true'
-    return cfig, key_path, cfig_dir, is_file_path
+            is_file_path=str(parts[2]).lower()=='true'
+    return cfig, key_path, is_file_path
 
 
