@@ -43,7 +43,9 @@ def config(
         - kwargs: key-value args to update the loaded config
     """
     if config_string:
-        cfig, key_path, cfig_dir, is_file_path=parse_config_string(config_string,cfig=cfig)
+        cfig, key_path, cfig_dir, is_file_path=parse_config_string(
+            config_string,
+            cfig=cfig)
     if isinstance(cfig,str):
         if not is_file_path:
             if cfig_dir in [TFBOX,None,True]:

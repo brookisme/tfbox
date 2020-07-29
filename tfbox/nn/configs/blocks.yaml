@@ -12,3 +12,12 @@ aspp:
   act: True
   act_config: {}
 
+
+segment_k3:
+  kernel_size_list: [3]
+  output_act: False
+
+
+segment_k53:
+  kernel_size_list: [5,3]
+  output_act: False
