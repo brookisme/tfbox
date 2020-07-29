@@ -1,6 +1,7 @@
 import os
 import math
 import yaml
+import tensorflow.keras as keras
 
 
 #
@@ -102,19 +103,41 @@ class StrideManager(object):
             self.nb_keepers=0
 
 
+#
+# FINE TUNING
+#
+def swap_top(model,top,inputs=None,inputs_shape=None,swap_index=-2):
+    if inputs is None:
+        if inputs_shape is None:
+            inputs=model.inputs
+        else:
+            inputs=keras.Input(shape=inputs_shape)
+    model.trainable=False
+    if swap_index:
+        model=keras.Model(model.inputs, model.layers[swap_index].output)
+    return keras.Model(inputs,top(model(inputs,training=False)))
 
-def is_trainable(name=None,index=None,matches=[],indices=[],searches=[],excludes=[]):
+
+def match_layer(
+        name=None,
+        index=None,
+        matches=[],
+        indices=[],
+        searches=[],
+        excludes=[]):
+    match=False
     if name:
         if name in matches:
-            return True
+            match=True
         else:
             found=next((s for s in searches if s in name),False)
             if found:
                 exclude=next((e for e in excludes if e in name),False)
                 if not exclude:
-                    return True
+                    match=True
     if index and indices:
-        return index in indices
+        match=index in indices
+    return match
     
 
 def set_trainable(
@@ -123,30 +146,33 @@ def set_trainable(
         indices=[],
         searches=[],
         excludes=[],
-        return_trainables=False,
+        trainable=True,
+        return_matched=False,
         noisy=False):
     if matches or indices or searches:
+        model.trainable=not trainable
         matches=_as_list(matches)
         indices=_as_list(indices)
         searches=_as_list(searches)
         excludes=_as_list(excludes)
         indices=[int(i) for i in indices]
-        if return_trainables:
-            trainables=[]
+        if return_matched:
+            matched=[]
         for i,l in enumerate(model.layers):
-            l.trainable=is_trainable(
+            match=match_layer(
                 name=l.name,
                 index=i,
                 matches=matches,
                 indices=indices,
                 searches=searches,
                 excludes=excludes)
-            if return_trainables:
-                trainables.append(l)
-            if noisy and l.trainable:
-                print(l.name)
-        if return_trainables:
-            return trainables
+            l.trainable=bool(trainable==match)
+            if return_matched and match:
+                matched.append(l)
+            if noisy and match:
+                print(l.name,l.trainable)
+        if return_matched:
+            return matched
 
 
 
