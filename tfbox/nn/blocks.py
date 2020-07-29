@@ -147,7 +147,7 @@ class CBAD(keras.Model):
     def _batch_norm(self,batch_norm):
         if batch_norm:
             bn=layers.BatchNormalization(name=self._layer_name('batch_norm'))
-        return bn      
+            return bn      
 
 
     def _activation(self,act,config):
@@ -673,6 +673,7 @@ class SegmentClassifier(keras.Model):
             filters_list=None,
             kernel_size=3,
             kernel_size_list=None,
+            output_batch_norm=False,
             output_act=True,
             output_act_config={},
             seperable_preclassification=False,
@@ -708,6 +709,7 @@ class SegmentClassifier(keras.Model):
         self.classifier=CBAD(
                 filters=filters_list[-1],
                 kernel_size=kernel_size_list[-1],
+                batch_norm=output_batch_norm,
                 act=act,
                 act_config=output_act_config,
                 name=self.block_name,
