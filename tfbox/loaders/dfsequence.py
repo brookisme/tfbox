@@ -123,7 +123,7 @@ class DFSequence(tf.keras.utils.Sequence):
         targ=self.get_target()
         if self.onehot:
             targ=to_categorical(targ,num_classes=self.nb_classes)
-        return inpt, np.expand_dims(targ,-1)
+        return inpt, targ
 
 
     def get_batch(self,batch_index,set_window=True,set_augment=True):
@@ -144,7 +144,7 @@ class DFSequence(tf.keras.utils.Sequence):
         targs=np.array([self.get_target(r) for r in self.batch_rows])
         if self.onehot:
             targs=to_categorical(targs,num_classes=self.nb_classes)
-        return inpts, targs #np.expand_dims(targs,-1)
+        return inpts, targs
 
     
     def get_input(self,row=None):
