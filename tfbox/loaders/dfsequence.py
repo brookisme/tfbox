@@ -234,16 +234,18 @@ class DFSequence(tf.keras.utils.Sequence):
             if isinstance(data[0],str):
                 data=[pd.read_csv(d,converters=converters) for d in data]
             data=pd.concat(data)
+        else:
+            data=data.copy()
         if self.has_windows:
             data.loc[:,self.group_column]=data.apply(self._window_group,axis=1)
-        if limit:
-            self.idents=self.idents[:limit*self.batch_size]
-            data=data.copy()[data[self.group_column].isin(self.idents)]
         if self.localize:
             data.loc[:,self.input_column]=data[self.input_column].apply(self._localize_path)
             data.loc[:,self.target_column]=data[self.target_column].apply(self._localize_path)
-        self.data=data
         self.idents=data.loc[:,self.group_column].unique().tolist()
+        if limit:
+            self.idents=self.idents[:limit*self.batch_size]
+            data=data.copy()[data[self.group_column].isin(self.idents)]
+        self.data=data
         self.nb_batches=int(len(self.idents)//self.batch_size)
         self.reset()
         

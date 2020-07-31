@@ -25,14 +25,14 @@ setup(
   download_url = 'https://github.com/brookisme/tfbox/tarball/0.1',
   keywords = ['python','tensorflow','model'],
   include_package_data=False,
+  package_data={
+    'tfbox.nn': ['configs/*.yaml']
+  },
   data_files=[
     (
       'config',[]
     )
   ],
-  package_data={
-    'tfbox.nn': ['configs/*.yaml']
-  },
   classifiers = [],
   entry_points={
       'console_scripts': [
