@@ -282,8 +282,8 @@ class DFSequence(tf.keras.utils.Sequence):
             if m:
                 _,e=m.span()
                 path=re.sub(f'^{self.localize}/','',path[e:])
-                if self.local_data_root:
-                    path=f'{self.local_data_root}/{path}'
+        if self.local_data_root:
+            path=f'{self.local_data_root}/{path}'
         return path
 
 
