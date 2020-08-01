@@ -3,6 +3,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from tfbox.utils.helpers import StrideManager
+from . import base
 from . import blocks
 from . import load
 #

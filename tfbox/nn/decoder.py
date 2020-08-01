@@ -1,7 +1,7 @@
 from pprint import pprint
 import tensorflow as tf
 from tensorflow.keras import layers
-from . import xception as xcpt
+from . import base
 from . import blocks
 from . import load
 #

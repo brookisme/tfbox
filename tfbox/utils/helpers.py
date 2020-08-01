@@ -1,4 +1,5 @@
 import os
+import re
 import math
 import yaml
 import tensorflow.keras as keras
@@ -30,6 +31,13 @@ def read_json(path,*key_path):
         obj=obj[k]
     return obj
 
+
+#
+# PYTHON
+#
+_SNAKE_RGX=re.compile('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))')
+def snake(string):
+    return _SNAKE_RGX.sub(r'_\1',str(string)).lower()
 
 
 #

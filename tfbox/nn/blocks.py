@@ -1,9 +1,11 @@
+import re
 from pprint import pprint
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
 from tensorflow.keras import activations
 from . import load
+import tfbox.utils.helpers as h
 #
 # CONSTANTS
 #
@@ -19,15 +21,24 @@ DEFAULT_GLOBAL_POOLING='average'
 
 
 
-
 #
 # HELPERS
 #
-ACTIVATIONS={
-    'relu': layers.ReLU,
-    'sigmoid': activations.sigmoid,
-    'softmax': layers.Softmax
-}
+def get(key,activation=False):
+    if activation:
+        return ACTIVATIONS[h.snake(key)]
+    else:
+        return BLOCKS[h.snake(key)]
+
+
+def layer_name(*name_path,index=None,named=True):
+    if named and name_path:
+        name_path=[p for p in name_path if p] 
+        name='.'.join(name_path)
+        if index is not None:
+            name=f'{name}-{index}'
+        return name
+
 
 def get_activation(act,**config):
     if act:
@@ -61,17 +72,6 @@ def upsample(
         return layers.UpSampling2D(
             size=(scale,scale),
             interpolation=mode)(x)
-
-
-def layer_name(*name_path,index=None,named=True):
-    if named and name_path:
-        name_path=[p for p in name_path if p] 
-        name='.'.join(name_path)
-        if index is not None:
-            name=f'{name}-{index}'
-        return name
-
-
 #
 # GENERAL BLOCKS 
 #
@@ -94,7 +94,7 @@ class CBAD(keras.Model):
             dropout=DEFAULT_DROPOUT,
             dropout_config={},
             act_last=False,
-            keep_output=False,
+            is_skip=False,
             name=None,
             named_layers=True,
             **conv_config):
@@ -123,7 +123,7 @@ class CBAD(keras.Model):
         self.act=self._activation(act,act_config)
         self.do=self._dropout(dropout,dropout_config)
         self.act_last=act_last
-        self.keep_output=keep_output
+        self.is_skip=is_skip
 
 
     def __call__(self,x,training=False):
@@ -142,7 +142,7 @@ class CBAD(keras.Model):
     # INTERNAL
     #
     def _layer_name(self,name):
-        return layer_name(*[self.block_name,name],named=self.named_layers)
+        return layer_name(self.block_name,name,named=self.named_layers)
 
 
     def _batch_norm(self,batch_norm):
@@ -200,7 +200,7 @@ class CBADStack(keras.Model):
             dilation_rate=1,
             output_stride=1,
             max_pooling=False,
-            keep_output=False,
+            is_skip=False,
             name=None,
             named_layers=True,
             layers_name='cbad',
@@ -246,7 +246,7 @@ class CBADStack(keras.Model):
             self.filters_list[-1],
             output_stride)
         self.stack=self._build_stack(output_stride)
-        self.keep_output=keep_output
+        self.is_skip=is_skip
 
 
     def __call__(self,x,training=False,**kwargs):
@@ -282,6 +282,8 @@ class CBADStack(keras.Model):
                     filters_in=filters            
                 if filters_out is None:
                     filters_out=filters
+                print('>>',filters,depth,filters_in,filters_out)
+
                 filters_list=[filters_in]+([filters]*(depth-2))+[filters_out]
         return filters_list
 
@@ -321,7 +323,7 @@ class CBADStack(keras.Model):
 
 
     def _layer_name(self,name,index=None):
-        return layer_name(*[self.block_name,name],index=index,named=self.named_layers)
+        return layer_name(self.block_name,name,index=index,named=self.named_layers)
 
 
     def _residual(self,residual,residual_act,filters,output_stride):
@@ -398,7 +400,7 @@ class CBADGroup(keras.Model):
             act_last=False,
             padding='same',
             out_config={},
-            keep_output=False,
+            is_skip=False,
             name=None,
             named_layers=True,
             layers_name='cbad',
@@ -422,7 +424,7 @@ class CBADGroup(keras.Model):
         self.pooling_stack=self._global_pooling(global_pooling)
         self.group=self._build_group()
         self.out_conv=self._out_conv(kernel_size_out,out_config)
-        self.keep_output=keep_output
+        self.is_skip=is_skip
 
 
     def __call__(self,x,training=False,**kwargs):
@@ -445,7 +447,7 @@ class CBADGroup(keras.Model):
     # INTERNAL
     #
     def _layer_name(self,name,index=None):
-        return layer_name(*[self.block_name,name],index=index,named=self.named_layers)
+        return layer_name(self.block_name,name,index=index,named=self.named_layers)
 
 
     def _call_group(self,x):
@@ -752,7 +754,7 @@ class SegmentClassifier(keras.Model):
     # INTERNAL
     #
     def _layer_name(self,name,index=None):
-        return layer_name(*[self.block_name,name],index=index,named=self.named_layers)
+        return layer_name(self.block_name,name,index=index,named=self.named_layers)
 
 
     def _filters_list(self,filters_list,filters,nb_classes,depth):
@@ -779,5 +781,25 @@ class SegmentClassifier(keras.Model):
             else:
                 act='softmax'
         return act
+
+
+#
+# TBOX DICTS
+#
+BLOCKS={
+    'cbad': CBAD,
+    'cbad_stack': CBADStack,
+    'cbad_group': CBADGroup,
+    'squeeze_excitation': SqueezeExcitation,
+    'aspp': ASPP,
+    'segment_classifier': SegmentClassifier
+}
+ACTIVATIONS={
+    'relu': layers.ReLU,
+    'sigmoid': activations.sigmoid,
+    'softmax': layers.Softmax
+}
+
+
 
 

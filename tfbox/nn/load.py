@@ -12,6 +12,8 @@ JSON_RGX='.json$'
 
 
 
+
+
 #
 # I/0
 #
@@ -57,7 +59,11 @@ def config(
         if isinstance(key_path,str):
             key_path=key_path.split('.')
         for k in key_path: cfig=cfig[k]
-    cfig.update(kwargs)
+    if kwargs:
+        if isinstance(config,dict):
+            cfig.update(kwargs)
+        else:
+            raise ValueError('kwargs only allowed for key-value configs.')
     return cfig
 
 
@@ -74,5 +80,7 @@ def parse_config_string(config_string,cfig=None):
         if nb_parts>2:
             is_file_path=str(parts[2]).lower()=='true'
     return cfig, key_path, is_file_path
+
+
 
 

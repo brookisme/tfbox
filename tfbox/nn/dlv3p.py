@@ -2,6 +2,7 @@ from pprint import pprint
 import tensorflow as tf
 from tensorflow.keras import layers
 from . import xception as xcpt
+from . import base
 from . import blocks
 from . import load
 #
@@ -25,6 +26,7 @@ class DLV3p(tf.keras.Model):
     DEFAULTS=load.config(cfig='dlv3p',key_path=DEFAULT_KEY)
     BEFORE_UP='before'
     AFTER_UP='after'
+    UPSAMPLE_MODE='bilinear'
     #
     # STATIC
     #
