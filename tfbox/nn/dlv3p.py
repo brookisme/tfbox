@@ -105,7 +105,7 @@ class DLV3p(tf.keras.Model):
             backbone_name=DEFAULTS.get('backbone_name',True),
             name=DEFAULTS.get('name',None),
             named_layers=DEFAULTS.get('named_layers',True),
-            **step_kwargs):
+            **kwargs):
         super(DLV3p, self).__init__()
         self.model_name=name
         self.named_layers=named_layers
