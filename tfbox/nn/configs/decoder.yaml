@@ -1,0 +1,10 @@
+decode_256_f128-64_res:
+  input_reducer: 256
+  skip_reducers: False
+  refinements:
+    - filters: 128
+      depth: 3
+      res: true
+    - filters: 64
+      depth: 3
+      res: true
