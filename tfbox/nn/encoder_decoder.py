@@ -27,12 +27,17 @@ class EncoderDecoder(base.Model):
             decoder_key_path=None,
             decoder_is_file_path=None,
             decoder_cfig_dir=None,
-            noisy=True,
             classifier_position=Decoder.AFTER_UP,
             classifier_config={
                 'classifier_type': base.Model.SEGMENT,
-            }):
-        super(EncoderDecoder, self).__init__()
+            },
+            name=NAME,
+            named_layers=True,
+            noisy=True):
+        super(EncoderDecoder, self).__init__(
+            name=name,
+            named_layers=named_layers,
+            noisy=noisy)
         if isinstance(model_config,str):
             model_config=load.config(
                     cfig=model_config,

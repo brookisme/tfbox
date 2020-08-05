@@ -26,12 +26,17 @@ class Encoder(base.Model):
             key_path='xception',
             is_file_path=False,
             cfig_dir=load.TFBOX,
-            noisy=True,
             classifier_config={
                 'classifier_type': base.Model.GLOBAL_POOLING,
             },
-            return_empty_skips=False):
+            return_empty_skips=False,
+            name=NAME,
+            named_layers=True,
+            noisy=True):
         super(Encoder, self).__init__(
+            name=name,
+            named_layers=named_layers,
+            noisy=noisy,
             nb_classes=nb_classes,
             classifier_config=classifier_config)
         if isinstance(model_config,str):

@@ -36,6 +36,7 @@ dlv3p:
             - aspp
 
     decoder:
+        name: dlv3p_decode
         input_reducer: 256
         skip_reducers: False
         refinements:

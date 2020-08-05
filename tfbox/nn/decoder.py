@@ -37,12 +37,17 @@ class Decoder(base.Model):
             key_path='decode_256_f128-64_res',
             is_file_path=False,
             cfig_dir=load.TFBOX,
-            noisy=True,
             classifier_position=AFTER_UP,
             classifier_config={
                 'classifier_type': base.Model.SEGMENT,
-            }):
+            },
+            name=NAME,
+            named_layers=True,
+            noisy=True):
         super(Decoder, self).__init__(
+            name=name,
+            named_layers=named_layers,
+            noisy=noisy,
             nb_classes=nb_classes,
             classifier_config=classifier_config)
         if isinstance(model_config,str):
@@ -113,16 +118,9 @@ class Decoder(base.Model):
     #
     # INTERNAL
     #
-    def _layer_name(self,group=None,index=None):
-        return blocks.layer_name(
-            *[self.model_name,group],
-            index=index,
-            named=self.named_layers)
-
-
     def _named(self,config,group,index=None):
         if self.named_layers:
-            config['name']=self._layer_name(group,index=index)
+            config['name']=self.layer_name(group,index=index)
             config['named_layers']=True
         return config
 
