@@ -20,64 +20,47 @@ REFINEMENT_CONFIG={
 #
 # Decoder: a flexible generic decoder
 # 
-class Decoder(tf.keras.Model):
+class Decoder(base.Model):
     #
     # CONSTANTS
     #
-    DEFAULT_KEY='decode_256_f128-64_res'
-    DEFAULTS=load.config(cfig='decoder',key_path=DEFAULT_KEY)
+    NAME='Decoder'
     UPSAMPLE_MODE='bilinear'
     BEFORE_UP='before'
     AFTER_UP='after'
-    SEGMENT='segment'
-
-
-    #
-    # STATIC
-    #
-    @staticmethod
-    def from_config(
-            cfig='decoder',
-            key_path=DEFAULT_KEY,
-            is_file_path=False,
-            cfig_dir=load.TFBOX,
-            **kwargs):
-        config=load.config(
-            cfig=cfig,
-            key_path=key_path,
-            cfig_dir=cfig_dir,
-            is_file_path=is_file_path,
-            **kwargs)
-        print('Decoder:')
-        pprint(config)
-        return Decoder(**config)
 
 
     def __init__(self,
-            output_size,
             nb_classes=None,
-            input_reducer=DEFAULTS.get('input_reducer'),
-            skip_reducers=DEFAULTS.get('skip_reducers'),
-            refinements=DEFAULTS.get('refinements'),
-            upsample_mode=DEFAULTS.get('upsample_mode'),
-            classifier_type=DEFAULTS.get('classifier_type',SEGMENT),
-            classifier_position=DEFAULTS.get('classifier_position',BEFORE_UP),
-            classifier_kernel_size_list=DEFAULTS.get('classifier_kernel_size_list'),
-            classifier_filters_list=DEFAULTS.get('classifier_filters_list'),
-            classifier_act=DEFAULTS.get('classifier_act',True),
-            classifier_act_config=DEFAULTS.get('classifier_act_config',{}),            
-            name=DEFAULTS.get('name',None),
-            named_layers=DEFAULTS.get('named_layers',True),
-            **kwargs):
-        super(Decoder, self).__init__()
-        # set properties
-        self._upsample_scale=None
-        self.output_size=output_size
-        self.model_name=name
-        self.named_layers=named_layers
-        self.upsample_mode=upsample_mode or Decoder.UPSAMPLE_MODE
-        self.classifier_position=classifier_position
+            output_size=None,
+            model_config=NAME,
+            key_path='decode_256_f128-64_res',
+            is_file_path=False,
+            cfig_dir=load.TFBOX,
+            noisy=True,
+            classifier_position=AFTER_UP,
+            classifier_config={
+                'classifier_type': base.Model.SEGMENT,
+            }):
+        super(Decoder, self).__init__(
+            nb_classes=nb_classes,
+            classifier_config=classifier_config)
+        if isinstance(model_config,str):
+            model_config=load.config(
+                    cfig=model_config,
+                    key_path=key_path,
+                    is_file_path=is_file_path,
+                    cfig_dir=cfig_dir,
+                    noisy=noisy )
+        # parse config
+        self._output_size=output_size or model_config.get('output_size')
+        input_reducer=model_config.get('input_reducer')
+        skip_reducers=model_config.get('skip_reducers')
+        refinements=model_config.get('refinements')
+        self.upsample_mode=model_config.get('upsample_mode',Decoder.UPSAMPLE_MODE)
+        classifier_config=model_config.get('classifier',False)
         # decoder
+        self._upsample_scale=None
         self.input_reducer=self._reducer(input_reducer)
         if skip_reducers:
             self.skip_reducers=[
@@ -89,21 +72,12 @@ class Decoder(tf.keras.Model):
                 self._refinement(r,index=i) for i,r in enumerate(refinements) ]
         else:
             self.refinements=None
-        # classifier
-        if classifier_type==Decoder.SEGMENT:
-            self.classifier=blocks.SegmentClassifier(
-                nb_classes=nb_classes,
-                filters_list=classifier_filters_list,
-                kernel_size_list=classifier_kernel_size_list,
-                output_act=classifier_act,
-                output_act_config=classifier_act_config,
-                name=self._layer_name('classifier'),
-                named_layers=self.named_layers)
-        elif not classifier_type:
-            self.classifier_position=False
-            self.classifier=None
-        else:
-            raise NotImplementedError(f'{classifier_type} is not a valid classifier')
+        self.classifier_position=classifier_position
+
+
+    def set_output(self,like):
+        if not self._output_size:
+            self._output_size=like.shape[-2]
 
 
     def __call__(self,inputs,skips=[],training=False):
@@ -157,8 +131,10 @@ class Decoder(tf.keras.Model):
             filters=config
             config=REDUCER_CONFIG.copy()
             config['filters']=filters
-            config=self._named(config,'reducer',index=index)
-            return blocks.CBAD(**config)
+        config=config.copy()
+        config=self._named(config,'reducer',index=index)
+        btype=config.pop('block_type','CBAD')
+        return blocks.get(btype)(**config)
 
 
     def _refinement(self,config,index=None):
@@ -166,13 +142,15 @@ class Decoder(tf.keras.Model):
             filters=config
             config=REFINEMENT_CONFIG.copy()
             config['filters']=filters
-            config=self._named(config,'refinements',index=index)
-            return blocks.CBADStack(**config)
+        config=config.copy()
+        config=self._named(config,'refinements',index=index)
+        btype=config.pop('block_type','CBADStack')
+        return blocks.get(btype)(**config)
 
 
     def _scale(self,x,like):
         if not self._upsample_scale:
-            self._upsample_scale=self.output_size/x.shape[-2]
+            self._upsample_scale=self._output_size/x.shape[-2]
         return self._upsample_scale
 
 

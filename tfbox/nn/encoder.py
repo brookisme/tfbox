@@ -21,13 +21,19 @@ class Encoder(base.Model):
 
 
     def __init__(self,
+            nb_classes=None,
             model_config=NAME,
             key_path='xception',
             is_file_path=False,
             cfig_dir=load.TFBOX,
             noisy=True,
-            classifier_config=False):
-        super(Encoder, self).__init__()
+            classifier_config={
+                'classifier_type': base.Model.GLOBAL_POOLING,
+            },
+            return_empty_skips=False):
+        super(Encoder, self).__init__(
+            nb_classes=nb_classes,
+            classifier_config=classifier_config)
         if isinstance(model_config,str):
             model_config=load.config(
                     cfig=model_config,
@@ -38,8 +44,7 @@ class Encoder(base.Model):
         blocks_config=model_config['blocks_config']
         classifier_config=model_config.get('classifier',False)
         self.stacked_blocks=[self._stacked_blocks(c) for c in blocks_config]
-        # TODO
-        self.classifier=False
+        self.return_empty_skips=return_empty_skips
 
 
     def __call__(self,inputs,training=False):
@@ -52,7 +57,7 @@ class Encoder(base.Model):
                 skips=self._update_skips(block,skips,x)
         if self.classifier:
             return self.classifier(x)
-        elif skips:
+        elif skips or self.return_empty_skips:
             return x, skips
         else:
             return x

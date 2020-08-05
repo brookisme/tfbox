@@ -4,7 +4,7 @@ decode_256_f128-64_res:
   refinements:
     - filters: 128
       depth: 3
-      res: true
+      residual: true
     - filters: 64
       depth: 3
-      res: true
+      residual: true

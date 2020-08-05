@@ -62,6 +62,7 @@ def config(
     else:
         title='config'
     if key_path:
+        key_path=h.snake(key_path)
         if isinstance(key_path,str):
             key_path=key_path.split('.')
         for k in key_path: cfig=cfig[k]
