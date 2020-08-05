@@ -15,7 +15,7 @@ REFINEMENT_CONFIG={
     'depth': 2,
     'residual': True
 }
-
+BAND_AXIS=-1
 
 #
 # Decoder: a flexible generic decoder
@@ -86,7 +86,8 @@ class Decoder(base.Model):
 
         x=self._conditional(inputs,self.input_reducer)
 
-        for i,skip in skips:
+        for i in range(len(skips)):
+            skip=skips[i]
             x=blocks.upsample(x,like=skip,mode=self.upsample_mode)
             skip=self._conditional(skip,self.skip_reducers,index=i)
             x=tf.concat([x,skip],axis=BAND_AXIS)
@@ -156,7 +157,7 @@ class Decoder(base.Model):
 
     def _conditional(self,x,action,index=None,test=True):
         if action and test:
-            if index: 
+            if index is not None: 
                 action=action[index]
             x=action(x)
         return x

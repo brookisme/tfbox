@@ -1,45 +1,41 @@
-encoder_decoder:
+dlv3p:
 
     encoder:
-
         blocks_config:
-
             - cbad:
                 filters: 32
                 strides: 2
-
-            - 64
-
+            - cbad:
+                filters: 64
             - cbad_stack:
                 name: entry_flow_blocks
                 seperable: true
                 depth: 3
                 output_stride: 2
-                layers: [128,256,728]
-
-
+                layers:
+                    - filters: 128
+                      is_skip: true
+                    - filters: 256
+                    - filters: 728
             - cbad_stack:
                 name: middle_flow
+                seperable: true
                 nb_repeats: 16
                 depth: 3
                 filters: 728
-
             - cbad_stack:
                 name: exit_flow_block
+                seperable: true
                 output_stride: 2
                 filters_list: [728,1024,1024]
-
             - cbad_stack:
                 name: exit_flow_convs
                 seperable: true
                 residual: false
                 layers: [1536,1536,2048]
-
             - aspp
 
-
     decoder:
-        
         input_reducer: 256
         skip_reducers: False
         refinements:
@@ -49,3 +45,36 @@ encoder_decoder:
             - filters: 64
               depth: 3
               residual: true
+
+
+
+# xunet:
+
+#     encoder:
+#         blocks_config:
+
+#             - cbad_stack:
+#                 name: entry_flow_blocks
+#                 seperable: true
+#                 depth: 3
+#                 output_stride: 2
+#                 is_skip: true
+#                 layers: [64,128,256]
+
+#             - cbad_stack:
+#                 name: middle_flow
+#                 nb_repeats: 2
+#                 depth: 3
+#                 filters: 512
+
+#     decoder:
+#         input_reducer: 256
+#         skip_reducers: False
+#         refinements:
+#             - filters: 128
+#               depth: 3
+#               residual: true
+#             - filters: 64
+#               depth: 3
+#               residual: true
+
