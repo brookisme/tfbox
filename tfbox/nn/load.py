@@ -1,5 +1,6 @@
 import os
 import re
+from pprint import pprint
 import tfbox.utils.helpers as h
 _nn_dir=os.path.dirname(os.path.realpath(__file__))
 #
@@ -23,6 +24,7 @@ def config(
         cfig_dir=TFBOX,
         is_file_path=False,
         config_string=None,
+        noisy=True,
         **kwargs):
     """ load model configs
     Args:
@@ -49,21 +51,28 @@ def config(
             config_string,
             cfig=cfig)
     if isinstance(cfig,str):
+        title=cfig
+        cfig=h.snake(cfig)
         if not is_file_path:
             if cfig_dir in [TFBOX,None,True]:
                 cfig_dir=CONFIGS_DIR
             if cfig_dir:
                 cfig=f'{cfig_dir}/{cfig}'
         cfig=h.read_yaml(f'{cfig}.yaml')
+    else:
+        title='config'
     if key_path:
         if isinstance(key_path,str):
             key_path=key_path.split('.')
         for k in key_path: cfig=cfig[k]
     if kwargs:
-        if isinstance(config,dict):
+        if isinstance(cfig,dict):
             cfig.update(kwargs)
         else:
             raise ValueError('kwargs only allowed for key-value configs.')
+    if noisy:
+        print(f'{title}:')
+        pprint(cfig)
     return cfig
 
 

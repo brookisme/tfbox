@@ -282,8 +282,6 @@ class CBADStack(keras.Model):
                     filters_in=filters            
                 if filters_out is None:
                     filters_out=filters
-                print('>>',filters,depth,filters_in,filters_out)
-
                 filters_list=[filters_in]+([filters]*(depth-2))+[filters_out]
         return filters_list
 

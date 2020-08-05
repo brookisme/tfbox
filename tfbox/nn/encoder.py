@@ -1,4 +1,5 @@
 from pprint import pprint
+from . import load
 from . import base
 from . import blocks
 #
@@ -20,10 +21,24 @@ class Encoder(base.Model):
 
 
     def __init__(self,
-            block_configs={},
+            model_config=NAME,
+            key_path='xception',
+            is_file_path=False,
+            cfig_dir=load.TFBOX,
+            noisy=True,
             classifier_config=False):
         super(Encoder, self).__init__()
-        self.stacked_blocks=[self._stacked_blocks(c) for c in block_configs]
+        if isinstance(model_config,str):
+            model_config=load.config(
+                    cfig=model_config,
+                    key_path=key_path,
+                    is_file_path=is_file_path,
+                    cfig_dir=cfig_dir,
+                    noisy=noisy )
+        blocks_config=model_config['blocks_config']
+        classifier_config=model_config.get('classifier',False)
+        self.stacked_blocks=[self._stacked_blocks(c) for c in blocks_config]
+        # TODO
         self.classifier=False
 
 
@@ -34,7 +49,6 @@ class Encoder(base.Model):
             for block in sb:
                 xin=x
                 x=block(x)
-                print(block,block.is_skip,xin.shape,x.shape)
                 skips=self._update_skips(block,skips,x)
         if self.classifier:
             return self.classifier(x)
