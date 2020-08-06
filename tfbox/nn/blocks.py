@@ -18,8 +18,10 @@ DEFAULT_MAX_POOLING={
     'padding': "same"
 }
 DEFAULT_GLOBAL_POOLING='average'
-
-
+UPSAMPLE_ERROR=(
+    'upsample called with scale==1. '
+    'Use allow_identity=True to force.'
+)
 
 #
 # HELPERS
@@ -58,20 +60,28 @@ def upsample(
         rescale=1,
         mode='bilinear',
         allow_resize=True,
-        force_resize=False):
+        force_resize=False
+        allow_identity=False):
     if scale is None:
         if shape is None:
             shape=like.shape
         scale=rescale*shape[2]/x.shape[2]
-    if allow_resize and (force_resize or (scale!=int(scale))):
-        h=round(x.shape[1]*scale)
-        w=round(x.shape[2]*scale)
-        return tf.image.resize(x,(h,w),method=mode)
+    if scale==1:
+        if not allow_identity:
+            raise ValueError(UPSAMPLE_ERROR)
     else:
-        scale=int(scale)  
-        return layers.UpSampling2D(
-            size=(scale,scale),
-            interpolation=mode)(x)
+        if allow_resize and (force_resize or (scale!=int(scale))):
+            h=round(x.shape[1]*scale)
+            w=round(x.shape[2]*scale)
+            x=tf.image.resize(x,(h,w),method=mode)
+        else:
+            scale=int(scale)
+            x=layers.UpSampling2D(
+                size=(scale,scale),
+                interpolation=mode)(x)
+    return x
+
+
 #
 # GENERAL BLOCKS 
 #

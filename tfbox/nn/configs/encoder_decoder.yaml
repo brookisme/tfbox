@@ -49,33 +49,43 @@ dlv3p:
 
 
 
-# xunet:
+xunet:
+    encoder:
+        name: down
+        blocks_config:
+            - cbad_stack:
+                name: entry_flow_blocks
+                seperable: true
+                depth: 3
+                output_stride: 2
+                layers: 
+                    - filters: 64
+                      is_skip: true
+                    - filters: 128
+                      is_skip: true
+                    - filters: 256
 
-#     encoder:
-#         blocks_config:
+            - cbad_stack:
+                name: middle_flow
+                nb_repeats: 2
+                depth: 3
+                filters: 512
 
-#             - cbad_stack:
-#                 name: entry_flow_blocks
-#                 seperable: true
-#                 depth: 3
-#                 output_stride: 2
-#                 is_skip: true
-#                 layers: [64,128,256]
+    decoder:
+        name: up
+        input_reducer: 256
+        skip_reducers: False
+        refinements:
+            - filters: 128
+              depth: 3
+              residual: true
+            - filters: 64
+              depth: 3
+              residual: true
+            - filters: 32
+              depth: 3
+              residual: true
 
-#             - cbad_stack:
-#                 name: middle_flow
-#                 nb_repeats: 2
-#                 depth: 3
-#                 filters: 512
 
-#     decoder:
-#         input_reducer: 256
-#         skip_reducers: False
-#         refinements:
-#             - filters: 128
-#               depth: 3
-#               residual: true
-#             - filters: 64
-#               depth: 3
-#               residual: true
+
 

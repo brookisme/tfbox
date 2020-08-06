@@ -88,26 +88,23 @@ class Decoder(base.Model):
     def __call__(self,inputs,skips=[],training=False):
         if (skips is None) or (skips is False):
             skips=[]
-
         x=self._conditional(inputs,self.input_reducer)
-
-        for i in range(len(skips)):
+        skips.reverse()
+        for i, skip in enumerate(skips):
             skip=skips[i]
             x=blocks.upsample(x,like=skip,mode=self.upsample_mode)
             skip=self._conditional(skip,self.skip_reducers,index=i)
             x=tf.concat([x,skip],axis=BAND_AXIS)
             x=self._conditional(x,self.refinements,index=i)
-
         x=self._conditional(
             x,
             self.classifier,
             test=self.classifier_position==Decoder.BEFORE_UP)
-        
         x=blocks.upsample(
             x,
             scale=self._scale(x,inputs),
-            mode=self.upsample_mode)
-
+            mode=self.upsample_mode,
+            allow_identity=True)
         x=self._conditional(
             x,
             self.classifier,
