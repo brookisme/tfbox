@@ -2,12 +2,12 @@ dlv3p:
 
     encoder:
         blocks_config:
-            - cbad:
+            - conv:
                 filters: 32
                 strides: 2
-            - cbad:
+            - conv:
                 filters: 64
-            - cbad_stack:
+            - stack:
                 name: entry_flow_blocks
                 seperable: true
                 depth: 3
@@ -17,18 +17,18 @@ dlv3p:
                       is_skip: true
                     - filters: 256
                     - filters: 728
-            - cbad_stack:
+            - stack:
                 name: middle_flow
                 seperable: true
                 nb_repeats: 16
                 depth: 3
                 filters: 728
-            - cbad_stack:
+            - stack:
                 name: exit_flow_block
                 seperable: true
                 output_stride: 2
                 filters_list: [728,1024,1024]
-            - cbad_stack:
+            - stack:
                 name: exit_flow_convs
                 seperable: true
                 residual: false
@@ -53,7 +53,9 @@ xunet:
     encoder:
         name: down
         blocks_config:
-            - cbad_stack:
+            - conv: 
+                filters: 32
+            - stack:
                 name: entry_flow_blocks
                 seperable: true
                 depth: 3
@@ -65,7 +67,7 @@ xunet:
                       is_skip: true
                     - filters: 256
 
-            - cbad_stack:
+            - stack:
                 name: middle_flow
                 nb_repeats: 2
                 depth: 3

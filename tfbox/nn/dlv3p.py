@@ -263,7 +263,7 @@ class DLV3p(tf.keras.Model):
             index=None,
             config={}):
         if filters:
-            return blocks.CBAD(
+            return blocks.Conv(
                     filters=filters,
                     kernel_size=kernel_size,
                     name=self._layer_name(group,index=index),

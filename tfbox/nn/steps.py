@@ -128,7 +128,7 @@ class Steps(tf.keras.Model):
                 dilation_rate_list,
                 squeeze_excitation_list,
                 residual_list)):
-            blk=blocks.CBADStack(
+            blk=blocks.Stack(
                 filters=f,
                 output_stride=s,
                 kernel_size=k,

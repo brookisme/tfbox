@@ -165,7 +165,7 @@ class Xception(tf.keras.Model):
     def _entry_flow(self,prestrides,prefilters,filters,strides,seperable,dropout):
         _layers=[]
         for i,(s,f) in enumerate(zip(prestrides,prefilters)):
-            _layers.append(blocks.CBAD(
+            _layers.append(blocks.Conv(
                 filters=f,
                 strides=self.stride_manager.strides(s),
                 dilation_rate=self.stride_manager.dilation_rate,
@@ -177,7 +177,7 @@ class Xception(tf.keras.Model):
         if not strides:
             strides=[2]*len(filters)
         for j,(f,s) in enumerate(zip(filters,strides)):
-            _layers.append(blocks.CBADStack(
+            _layers.append(blocks.Stack(
                     seperable=seperable,
                     dropout=dropout,
                     depth=3,
@@ -196,13 +196,13 @@ class Xception(tf.keras.Model):
         if filters==Xception.AUTO:
             filters=prev_filters
         for i in range(flow_depth):
-            _layers.append(blocks.CBADStack(
+            _layers.append(blocks.Stack(
                 seperable=seperable,
                 dropout=dropout,
                 depth=3,
                 filters=filters,
                 dilation_rate=self.stride_manager.dilation_rate,
-                residual=blocks.CBADStack.IDENTITY,
+                residual=blocks.Stack.IDENTITY,
                 name=self._layer_name('middle',i),
                 named_layers=self.named_layers))
         return _layers, filters
@@ -212,7 +212,7 @@ class Xception(tf.keras.Model):
         if filters_in==Xception.AUTO:
             filters_in=prev_filters
         _layers=[]
-        _layers.append(blocks.CBADStack(
+        _layers.append(blocks.Stack(
                 seperable=seperable,
                 dropout=dropout,
                 depth=3,
@@ -225,7 +225,7 @@ class Xception(tf.keras.Model):
                 named_layers=self.named_layers))
         self.stride_manager.step()
         for i,f in enumerate(postfilters):
-            _layers.append(blocks.CBAD(
+            _layers.append(blocks.Conv(
                 filters=f,
                 seperable=seperable,
                 dropout=dropout,

@@ -129,7 +129,7 @@ class Decoder(base.Model):
             config['filters']=filters
         config=config.copy()
         config=self._named(config,'reducer',index=index)
-        btype=config.pop('block_type','CBAD')
+        btype=config.pop('block_type','Conv')
         return blocks.get(btype)(**config)
 
 
@@ -140,7 +140,7 @@ class Decoder(base.Model):
             config['filters']=filters
         config=config.copy()
         config=self._named(config,'refinements',index=index)
-        btype=config.pop('block_type','CBADStack')
+        btype=config.pop('block_type','Stack')
         return blocks.get(btype)(**config)
 
 

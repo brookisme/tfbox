@@ -5,8 +5,8 @@ from . import blocks
 #
 # CONSTANTS
 #
-DEFAULT_BTYPE='cbad_stack'
-INT_BTYPE='cbad'
+DEFAULT_BTYPE='stack'
+INT_BTYPE='conv'
 STACK='stack'
 
 

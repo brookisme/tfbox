@@ -24,7 +24,7 @@ def config(
         cfig_dir=TFBOX,
         is_file_path=False,
         config_string=None,
-        noisy=True,
+        noisy=False,
         **kwargs):
     """ load model configs
     Args:
@@ -72,7 +72,6 @@ def config(
         else:
             raise ValueError('kwargs only allowed for key-value configs.')
     if noisy:
-        print(f'{title}:')
         pprint(cfig)
     return cfig
 

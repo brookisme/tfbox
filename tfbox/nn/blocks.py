@@ -60,7 +60,7 @@ def upsample(
         rescale=1,
         mode='bilinear',
         allow_resize=True,
-        force_resize=False
+        force_resize=False,
         allow_identity=False):
     if scale is None:
         if shape is None:
@@ -85,7 +85,7 @@ def upsample(
 #
 # GENERAL BLOCKS 
 #
-class CBAD(keras.Model):
+class Conv(keras.Model):
     """ Conv-BatchNorm-Activation-Dropout
     """
     #
@@ -108,7 +108,7 @@ class CBAD(keras.Model):
             name=None,
             named_layers=True,
             **conv_config):
-        super(CBAD, self).__init__()
+        super(Conv, self).__init__()
         self.block_name=name or self.name
         self.named_layers=named_layers
         if seperable:
@@ -176,8 +176,8 @@ class CBAD(keras.Model):
 
 
 
-class CBADStack(keras.Model):
-    """ (Res)Stack of CBAD Blocks
+class Stack(keras.Model):
+    """ (Res)Stack of Conv Blocks
     """
     #
     # CONSTANTS
@@ -213,9 +213,9 @@ class CBADStack(keras.Model):
             is_skip=False,
             name=None,
             named_layers=True,
-            layers_name='cbad',
+            layers_name='conv',
             **conv_config):
-        super(CBADStack, self).__init__()
+        super(Stack, self).__init__()
         self.block_name=name or self.name
         self.named_layers=named_layers
         self.layers_name=layers_name
@@ -260,7 +260,7 @@ class CBADStack(keras.Model):
 
 
     def __call__(self,x,training=False,**kwargs):
-        if self.residual==CBADStack.IDENTITY:
+        if self.residual==Stack.IDENTITY:
             res=x
         elif self.residual:
             res=self.residual(x)
@@ -335,12 +335,12 @@ class CBADStack(keras.Model):
 
 
     def _residual(self,residual,residual_act,filters,output_stride):
-        if residual and (residual!=CBADStack.IDENTITY):
+        if residual and (residual!=Stack.IDENTITY):
             if not residual_act:
                 act=False
             else:
                 act=self.act
-            residual=CBAD(
+            residual=Conv(
                 filters=filters,
                 kernel_size=1,
                 strides=output_stride,
@@ -360,7 +360,7 @@ class CBADStack(keras.Model):
                 strides=output_stride
             else:
                 strides=1
-            _layers.append(CBAD(
+            _layers.append(Conv(
                 filters=f,
                 kernel_size=k,
                 strides=strides,
@@ -379,8 +379,8 @@ class CBADStack(keras.Model):
 
 
 
-class CBADGroup(keras.Model):
-    """ (Res)Parallel Group of CBAD Blocks
+class Group(keras.Model):
+    """ (Res)Parallel Group of Conv Blocks
     """
     #
     # CONSTANTS
@@ -411,9 +411,9 @@ class CBADGroup(keras.Model):
             is_skip=False,
             name=None,
             named_layers=True,
-            layers_name='cbad',
+            layers_name='conv',
             **conv_config):
-        super(CBADGroup, self).__init__()
+        super(Group, self).__init__()
         if padding is not 'same':
             raise NotImplementedError('currently only accepts padding=same')
         self.block_name=name or self.name
@@ -436,7 +436,7 @@ class CBADGroup(keras.Model):
 
 
     def __call__(self,x,training=False,**kwargs):
-        if self.residual==CBADGroup.IDENTITY:
+        if self.residual==Group.IDENTITY:
             res=x
         elif self.residual:
             res=self.residual(x)
@@ -515,12 +515,12 @@ class CBADGroup(keras.Model):
 
 
     def _residual(self,residual,residual_act):
-        if residual and (residual!=CBADStack.IDENTITY):
+        if residual and (residual!=Stack.IDENTITY):
             if not residual_act:
                 act=False
             else:
                 act=self.act
-            residual=CBAD(
+            residual=Conv(
                 filters=self.hidden_filters,
                 kernel_size=1,
                 act=act,
@@ -534,7 +534,7 @@ class CBADGroup(keras.Model):
     def _build_group(self):
         _layers=[] 
         for i,(k,d) in enumerate(zip(self.kernel_size_list,self.dilation_rate_list)):
-            _layers.append(CBAD(
+            _layers.append(Conv(
                 filters=self.hidden_filters,
                 kernel_size=k,
                 dilation_rate=d,
@@ -552,7 +552,7 @@ class CBADGroup(keras.Model):
             config['act']=self.act
             config['act_config']=self.act_config
             config.update(out_config)
-            return CBAD(
+            return Conv(
                 filters=self.filters,
                 kernel_size=kernel_size,
                 name=self._layer_name('out_conv'),
@@ -629,7 +629,7 @@ class Residual(keras.Model):
             if identity:
                 residual=Residual.IDENTITY
             else:
-                residual=CBAD(
+                residual=Conv(
                     filters=filters,
                     kernel_size=1,
                     **config)
@@ -640,8 +640,8 @@ class Residual(keras.Model):
 #
 # PRE-CONFIGURED BLOCKS
 #
-class ASPP(CBADGroup):
-    """ ASPP (convenience wrapper for CBADGroup)
+class ASPP(Group):
+    """ ASPP (convenience wrapper for Group)
     """
     #
     # CONSTANTS
@@ -728,7 +728,7 @@ class SegmentClassifier(keras.Model):
             nb_classes,
             len(kernel_size_list))
         if len(filters_list)>1:
-            self.preclassifier=CBADStack(
+            self.preclassifier=Stack(
                 filters_list=filters_list[:-1],
                 kernel_size_list=kernel_size_list[:-1],
                 seperable=seperable_preclassification,
@@ -740,7 +740,7 @@ class SegmentClassifier(keras.Model):
             self.preclassifier=False
         act=self._activation(nb_classes,output_act)
         print('OUTPUT_ACTIVATION:',act,output_act)
-        self.classifier=CBAD(
+        self.classifier=Conv(
                 filters=filters_list[-1],
                 kernel_size=kernel_size_list[-1],
                 batch_norm=output_batch_norm,
@@ -795,9 +795,9 @@ class SegmentClassifier(keras.Model):
 # TBOX DICTS
 #
 BLOCKS={
-    'cbad': CBAD,
-    'cbad_stack': CBADStack,
-    'cbad_group': CBADGroup,
+    'conv': Conv,
+    'stack': Stack,
+    'group': Group,
     'squeeze_excitation': SqueezeExcitation,
     'aspp': ASPP,
     'segment_classifier': SegmentClassifier
