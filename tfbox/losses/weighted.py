@@ -14,15 +14,15 @@ def weighted_categorical_crossentropy(weights=None,**kwargs):
         Returns:
             * weighted categorical crossentropy function
     """
-    cce=losses.CategoricalCrossentropy(**kwargs)
     if weights is None:
         print('WARNING: WCCE called without weights. Defaulting to CCE')
-        return cce
+        return losses.CategoricalCrossentropy(**kwargs)
     else:
-        print('WCCE:',weights,kwargs)
         if isinstance(weights,list) or isinstance(np.ndarray):
-            weights=[1/(w+EPS) for w in weights]
             weights=K.variable(weights)
+        kwargs['reduction']=tf.keras.losses.Reduction.NONE
+        print('WCCE:',weights,kwargs)
+        cce=losses.CategoricalCrossentropy(**kwargs)
         def _loss(target,output):
             unweighted_losses=cce(target,output)
             pixel_weights=tf.reduce_sum(weights*target, axis=-1)
