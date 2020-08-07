@@ -47,7 +47,6 @@ class Encoder(base.Model):
                     cfig_dir=cfig_dir,
                     noisy=noisy )
         blocks_config=model_config['blocks_config']
-        classifier_config=model_config.get('classifier',False)
         self.stacked_blocks=[self._stacked_blocks(c) for c in blocks_config]
         self.return_empty_skips=return_empty_skips
 
