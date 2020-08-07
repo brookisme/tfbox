@@ -136,12 +136,17 @@ class DFSequence(tf.keras.utils.Sequence):
                 setup through `handler_kwargs`
         """
         self.select_batch(batch_index)
-        if set_window:
-            self.handler.set_window()
-        if set_augment:
-            self.handler.set_augmentation()
-        inpts=np.array([self.get_input(r) for r in self.batch_rows])
-        targs=np.array([self.get_target(r) for r in self.batch_rows])
+        inpts=[]
+        targs=[]
+        for r in self.batch_rows:
+            if set_window:
+                self.handler.set_window()
+            if set_augment:
+                self.handler.set_augmentation()
+            inpts.append(self.get_input(r))
+            targs.append(self.get_target(r))
+        inpts=np.array(inpts)
+        targs=np.array(targs)
         if self.onehot:
             targs=to_categorical(targs,num_classes=self.nb_classes)
         return inpts, targs
