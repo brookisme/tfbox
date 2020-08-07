@@ -26,6 +26,6 @@ def weighted_categorical_crossentropy(weights=None,**kwargs):
             unweighted_losses=cce(target,output)
             pixel_weights=tf.reduce_sum(weights*target, axis=-1)
             weighted_losses=unweighted_losses*pixel_weights
-            return tf.reduce_mean(weighted_losses,axis=[1,2])
+            return tf.reduce_mean(weighted_losses)
     return _loss
 

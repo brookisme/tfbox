@@ -5,10 +5,11 @@ import tensorflow as tf
 import tensorflow.keras as keras
 import numpy as np
 import io
+from . import helpers as h
 #
 # HELPERS
 #
-INPUT_BANDS=[1]
+INPUT_BANDS=[0]
 TARGET_COLORS=['#ff0000','#fafafa','#0000aa']
 DESCRIPTION_HEAD="""
     * batch_index: {}
@@ -23,17 +24,17 @@ class SegmentationImageWriter(object):
     def __init__(self,
             data_dir,
             loader,
+            vmax,
             model=None,
             input_bands=INPUT_BANDS,
-            target_colors=TARGET_COLORS,
+            target_colors=None,
             vmin=0,
-            vmax=None,
             ax_h=4,
             ax_w=None,
             ax_delta=0.2,
             preserve_epoch=None):
-        if not vmax: 
-            vmax=len(target_colors)-1
+        if not target_colors:
+            target_colors=h.COLORS[:vmax]
         self.input_bands=input_bands
         self.cmap=mplib_colors.ListedColormap(target_colors)
         self.vmin=vmin

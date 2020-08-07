@@ -1,6 +1,6 @@
 import random
 import tensorflow.keras as keras
-from tfbox.utils.tboard import SegmentationImageWriter, INPUT_BANDS, TARGET_COLORS
+from tfbox.utils.tboard import SegmentationImageWriter, INPUT_BANDS
 
 
 
@@ -13,10 +13,10 @@ class TBSegmentationImages(keras.callbacks.Callback):
     def __init__(self,
             data_dir,
             loader,
-            input_bands=[0],
-            target_colors=TARGET_COLORS,
+            vmax,
+            input_bands=INPUT_BANDS,
+            target_colors=None,
             vmin=0,
-            vmax=None,
             ax_h=4,
             ax_w=None,
             ax_delta=0.2,
@@ -29,10 +29,10 @@ class TBSegmentationImages(keras.callbacks.Callback):
         self.siw=SegmentationImageWriter(
             data_dir=data_dir,
             loader=loader,
+            vmax=vmax,
             input_bands=input_bands,
             target_colors=target_colors,
             vmin=vmin,
-            vmax=vmax,
             ax_h=ax_h,
             ax_w=ax_w,
             ax_delta=ax_delta,
