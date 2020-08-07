@@ -2,7 +2,7 @@ import tensorflow as tf
 import tensorflow.keras.losses as losses
 import tensorflow.keras.backend as K
 
-
+EPS=1e-8
 
 #
 # CUSTOM LOSS FUNCTIIONS
@@ -21,6 +21,7 @@ def weighted_categorical_crossentropy(weights=None,**kwargs):
     else:
         print('WCCE:',weights,kwargs)
         if isinstance(weights,list) or isinstance(np.ndarray):
+            weights=[1/(w+EPS) for w in weights]
             weights=K.variable(weights)
         def _loss(target,output):
             unweighted_losses=cce(target,output)
