@@ -40,6 +40,10 @@ def snake(string):
     return _SNAKE_RGX.sub(r'_\1',str(string)).lower()
 
 
+def camel(string):
+    return re.sub('[\ \-\_]','',str(string).title())
+
+
 #
 # UTILS
 #
