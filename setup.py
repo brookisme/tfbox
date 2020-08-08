@@ -6,6 +6,7 @@ setup(
     'tfbox.callbacks',
     'tfbox.loaders',
     'tfbox.losses',
+    'tfbox.metrics',
     'tfbox.nn',
     'tfbox.utils'
   ],
@@ -14,10 +15,11 @@ setup(
     'tfbox.callbacks': 'tfbox/callbacks',
     'tfbox.loaders': 'tfbox/loaders',
     'tfbox.losses': 'tfbox/losses',
+    'tfbox.metrics': 'tfbox/metrics',
     'tfbox.nn': 'tfbox/nn',
     'tfbox.utils': 'tfbox/utils'
   },
-  version = '0.0.0.19',
+  version = '0.0.0.20',
   description = 'tfbox: a collection of models and tools for tensorflow',
   author = 'Brookie Guzder-Williams',
   author_email = 'brook.williams@gmail.com',
