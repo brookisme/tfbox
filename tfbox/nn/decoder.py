@@ -16,6 +16,10 @@ REFINEMENT_CONFIG={
     'residual': True
 }
 BAND_AXIS=-1
+SAFE_RESCALE_ERROR=(
+    'tfbox.Decoder: '
+    'output rescale leads to fractional value. '
+    'use safe_rescale=False to force' )
 
 #
 # Decoder: a flexible generic decoder
@@ -33,6 +37,8 @@ class Decoder(base.Model):
     def __init__(self,
             nb_classes=None,
             output_size=None,
+            output_ratio=None,
+            safe_rescale=True,
             model_config=NAME,
             key_path='decode_256_f128-64_res',
             is_file_path=False,
@@ -59,6 +65,8 @@ class Decoder(base.Model):
                     noisy=noisy )
         # parse config
         self._output_size=output_size or model_config.get('output_size')
+        self._output_ratio=output_ratio or model_config.get('output_ratio',1)
+        self.safe_rescale=safe_rescale or model_config.get('safe_rescale',True)
         input_reducer=model_config.get('input_reducer')
         skip_reducers=model_config.get('skip_reducers')
         refinements=model_config.get('refinements')
@@ -82,7 +90,7 @@ class Decoder(base.Model):
 
     def set_output(self,like):
         if not self._output_size:
-            self._output_size=like.shape[-2]
+            self._output_size=self._output_rescale(like.shape[-2])
 
 
     def __call__(self,inputs,skips=[],training=False):
@@ -142,6 +150,15 @@ class Decoder(base.Model):
         config=self._named(config,'refinements',index=index)
         btype=config.pop('block_type','Stack')
         return blocks.get(btype)(**config)
+
+
+    def _output_rescale(self,value):
+        fval=value*self._output_ratio
+        val=round(fval)
+        if (not self.safe_rescale) or (val==fval):
+            return val
+        else:
+            raise ValueError(SAFE_RESCALE_ERROR)
 
 
     def _scale(self,x,like):
