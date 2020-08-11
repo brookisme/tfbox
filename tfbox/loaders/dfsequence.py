@@ -46,6 +46,7 @@ class DFSequence(tf.keras.utils.Sequence):
             window_column=WINDOW_COL,
             onehot=True,
             cropping=None,
+            stop_floating=False,
             float_cropping=None,
             size=None,
             example_path=None,
@@ -72,6 +73,7 @@ class DFSequence(tf.keras.utils.Sequence):
         self.handler=InputTargetHandler(
             input_bands=input_bands,
             cropping=cropping,
+            stop_floating=stop_floating,
             float_cropping=float_cropping,
             size=size,
             target_resolution=target_resolution,
