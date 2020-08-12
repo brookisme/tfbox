@@ -30,7 +30,6 @@ class ScoreKeeper(object):
         self.nb_bands=len(self.band_names)
         self.band_importance=band_importance
         self._set_metric(metric,ignore_label)
-
         if print_keys is True:
             self.print_keys=[self.metric_name]
         elif print_keys:
