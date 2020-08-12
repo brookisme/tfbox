@@ -23,6 +23,7 @@ class ScoreKeeper(object):
         self.model=model
         self.loader=loader
         self.classes=classes
+        self.max_class_value=max(classes.keys())
         self.nb_classes=nb_classes or len(classes)
         self.row_keys=row_keys or []
         self.band_names=band_names or []
@@ -100,10 +101,6 @@ class ScoreKeeper(object):
         return scores
 
 
-    def _importance(self,targ,randomized_pred,base_score):
-        return 1-((base_score-self.metric(targ,randomized_pred).numpy())/base_score)
-
-
     def confusion(self,targ,pred,data={}):
         cm=tf.math.confusion_matrix(
             tf.reshape(targ,[-1]),
@@ -152,11 +149,17 @@ class ScoreKeeper(object):
 
     def _randomize(self,im,b):
         im=im.copy()
-        bnd=im[:,:,b]
-        np.random.shuffle(bnd)
-        im[:,:,b]=bnd
+        bnd=tf.random.uniform(im.shape[:-1],maxval=self.max_class_value+1,dtype=tf.int32)
+        if im.ndim==3:
+            im[:,:,b]=bnd
+        else:
+            im[:,:,:,b]=bnd
         return im
-    
+
+
+    def _importance(self,targ,randomized_pred,base_score):
+        return ((base_score-self.metric(targ,randomized_pred).numpy())/base_score)
+
 
     def _flatten(self,ll):
         return [i for l in ll for i in l]          
