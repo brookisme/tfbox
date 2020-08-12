@@ -88,14 +88,22 @@ class ScoreKeeper(object):
             if not self.nb_bands:
                 self.nb_bands=inpts.shape[-1]
             for b in range(self.nb_bands):
-                preds=tf.argmax(self.model(self._randomize(inpts,b)),axis=-1)
+                rpreds=tf.argmax(self.model(self._randomize(inpts,b)),axis=-1)
                 if self.band_names:
                     b=self.band_names[b]
-                for j,(targ,pred) in enumerate(zip(targs,preds)):
-                    scores[j][f'importance_{b}']=self.metric(targ,pred).numpy()
+                for j,(targ,rpred) in enumerate(zip(targs,rpreds)):
+                    base_score=scores[j][self.metric_name]
+                    scores[j][f'importance_{b}']=self._importance(
+                        targ,
+                        rpred,
+                        base_score)
         return scores
 
-        
+
+    def _importance(self,targ,randomized_pred,base_score):
+        return 1-((base_score-self.metric(targ,randomized_pred).numpy())/base_score)
+
+
     def confusion(self,targ,pred,data={}):
         cm=tf.math.confusion_matrix(
             tf.reshape(targ,[-1]),
