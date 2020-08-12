@@ -41,6 +41,8 @@ class ScoreKeeper(object):
     def report(self,frac=None,force=False):
         if force or (self.scores is None):
             nb_batches=len(self.loader)
+            if not nb_batches:
+                raise ValueError('no data to score')
             batch_indices=list(range(nb_batches))
             np.random.shuffle(batch_indices)
             if frac:
