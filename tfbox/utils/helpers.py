@@ -163,7 +163,6 @@ def set_trainable(
         return_matched=False,
         noisy=False):
     if matches or indices or searches:
-        model.trainable=not trainable
         matches=_as_list(matches)
         indices=_as_list(indices)
         searches=_as_list(searches)

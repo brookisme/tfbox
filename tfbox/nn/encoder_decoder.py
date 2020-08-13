@@ -61,12 +61,11 @@ class EncoderDecoder(base.Model):
                     cfig_dir=self._value(decoder_cfig_dir,cfig_dir),
                     noisy=noisy )
         decoder_config['classifier_config']=self._value(
-                classifier_config,
-                decoder_config.get('classifier_config')
-            )
+                decoder_config.get('classifier_config'),
+                classifier_config )
         decoder_config['classifier_position']=self._value(
-            classifier_position,
-            decoder_config.get('classifier_position'))
+            decoder_config.get('classifier_position'),
+            classifier_position )
         decoder_config['output_size']=self._value(
             output_size,
             decoder_config.get('output_size'))
