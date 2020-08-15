@@ -3,7 +3,7 @@ import pandas as pd
 import tensorflow as tf
 import tfbox.metrics as metrics
 
-
+EPS=1e-8
 
 class ScoreKeeper(object):
 
@@ -137,12 +137,12 @@ class ScoreKeeper(object):
 
     def _acc_metric(self,ignore_label):
         def _acc(y_true,y_pred):
-            if ignore_label:
+            if (ignore_label is None) or (ignore_label is False):
+                valid=1
+                total=tf.cast(tf.math.reduce_prod(y_true.shape),tf.float32)
+            else:
                 valid=tf.cast(y_true!=ignore_label,tf.float32)
                 total=tf.reduce_sum(valid)
-            else:
-                valid=1
-                total=valid.size()
             valid_true=valid*tf.cast((y_true==y_pred),tf.float32)
             return tf.reduce_sum(valid_true)/total
         return _acc
@@ -159,7 +159,7 @@ class ScoreKeeper(object):
 
 
     def _importance(self,targ,randomized_pred,base_score):
-        return ((base_score-self.metric(targ,randomized_pred).numpy())/base_score)
+        return ((base_score-self.metric(targ,randomized_pred).numpy())/base_score+EPS)
 
 
     def _flatten(self,ll):
