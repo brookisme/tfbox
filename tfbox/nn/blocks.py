@@ -207,8 +207,10 @@ class Stack(keras.Model):
             batch_norm=True,
             act=True,
             act_config={},
-            dilation_rate=1,
+            input_dilation_rate=1,
+            output_dilation_rate=1,
             output_stride=1,
+            dilation_rate=1,
             max_pooling=False,
             is_skip=False,
             name=None,
@@ -255,7 +257,10 @@ class Stack(keras.Model):
             residual_act,
             self.filters_list[-1],
             output_stride)
-        self.stack=self._build_stack(output_stride)
+        self.stack=self._build_stack(
+            output_stride,
+            input_dilation_rate,
+            output_dilation_rate)
         self.is_skip=is_skip
 
 
@@ -352,23 +357,31 @@ class Stack(keras.Model):
         return residual
 
     
-    def _build_stack(self,output_stride):
+    def _build_stack(self,
+            output_stride,
+            input_dilation_rate,
+            output_dilation_rate):
         _layers=[] 
         last_layer_index=len(self.filters_list)-1
         for i,(f,k) in enumerate(zip(self.filters_list,self.kernel_size_list)):
+            cfig=self.shared_config.copy()
+            strides=cfig.pop('strides',1)
+            dilation_rate=cfig.pop('dilation_rate',1)
+            if (i==0):
+                dilation_rate=input_dilation_rate or dilation_rate
             if (i==last_layer_index) and (not self.max_pooling_config):
-                strides=output_stride
-            else:
-                strides=1
+                strides=output_stride or strides
+                dilation_rate=output_dilation_rate or dilation_rate
             _layers.append(Conv(
                 filters=f,
                 kernel_size=k,
                 strides=strides,
+                dilation_rate=dilation_rate,
                 seperable=self.seperable,
                 act=self.act,
                 name=self._layer_name(self.layers_name,index=i),
                 named_layers=self.named_layers,
-                **self.shared_config))
+                **cfig))
             if (i==last_layer_index) and self.max_pooling_config:
                 _layers.append(layers.MaxPooling2D(
                     self._layer_name('max_pooling'),
