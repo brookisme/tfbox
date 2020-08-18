@@ -1,3 +1,4 @@
+import re
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -6,9 +7,15 @@ import tfbox.metrics as metrics
 EPS=1e-8
 
 class ScoreKeeper(object):
-
+    #
+    # CONSTANTS
+    #
     STRICT_ACCURACY='acc'
 
+
+    #
+    # PUBLIC
+    #
     def __init__(self,
                  model,
                  loader,
@@ -174,4 +181,138 @@ class ScoreKeeper(object):
                 line=f'[{index}/{self.report_length}] {line}'
             print(line)
 
-                
+
+
+#
+# NOTEBOOK DISPLAY
+#
+class ScoreBoard(object):
+    """ a notebook parser for ScoreKeeper reports
+    """
+    FBETAS=[1,2,0.5]
+
+
+    #
+    # STATIC
+    #
+    def precision_recall(tp,fx):
+        return tp/(tp+fx)
+
+
+    def fbeta(p,r,beta=2):
+        return ((1+(beta**2))*p*r)/(((beta**2)*p)+r)
+
+
+    #
+    # PUBLIC
+    #    
+    def __init__(self,
+            report,
+            categories=[],
+            fbetas=FBETAS,
+            accuracy_key='acc',
+            nb_display=print,
+            drop_na=True):
+        if isinstance(report,str):
+            report=pd.read_csv(report)
+        if drop_na:
+            report.dropna(inplace=True)
+        self.report=report
+        self.categories=categories
+        self.fbetas=fbetas
+        self.accuracy_key=accuracy_key
+        self.nb_display=nb_display
+
+
+    def accuracy(self,key=None,value=None):
+        df=self.report
+        if key:
+            df=df[df[key]==value]
+        return df[self.accuracy_key].mean()
+
+
+    def accuracies(self,key,sort=True,display=True,return_data=False):
+        values=self.report[key].unique()
+        _df=pd.DataFrame([{ 
+            key:v, 
+            self.accuracy_key: self.accuracy(key=key,value=v)} 
+            for v in values])
+        if sort:
+            _df=_df.sort_values(self.accuracy_key)
+        return self._display_return(_df,display,return_data)
+
+
+    def stats(self,cm,cat,categories=None,fbetas=None):
+        categories=categories or self.categories
+        fbetas=fbetas or self.fbetas     
+        not_cats=[c for c in categories if c!=cat]
+        tp=cm[f'{cat}-{cat}']
+        fp=cm[[f'{c}-{cat}' for c in not_cats]].sum()
+        tn=cm[[f'{c}-{c2}' for c in not_cats for c2 in not_cats]].sum()
+        fn=cm[[f'{cat}-{c}' for c in not_cats]].sum()
+        p=ScoreBoard.precision_recall(tp,fp)
+        r=ScoreBoard.precision_recall(tp,fn)
+        _stats={
+            'lulc':cat,
+            'precision': p,
+            'recall': r,
+            'tp':tp,
+            'fp':fp,
+            'fn':fn,
+            'tn':tn }
+        for b in fbetas:
+            bkey=re.sub("\.","",str(b))
+            _stats[f'f_{bkey}']=ScoreBoard.fbeta(p,r,beta=b)
+        return _stats
+
+
+    def stat_report(self,
+            categories=None,
+            key=None,
+            value=None,
+            fbetas=None,
+            display=True,
+            return_data=False):
+        categories=categories or self.categories
+        fbetas=fbetas or self.fbetas
+        df=self.report
+        if key:
+            df=df[df[key]==value]
+        cm=df[self._confusion_cols(categories)].sum()
+        _df=pd.DataFrame([self.stats(cm,c,categories,fbetas=fbetas) for c in categories])
+        if key:
+            _df.loc[:,key]=value
+            _df=_df[[key]+[k for k in _df.columns if k!=key]]
+        return self._display_return(_df,display,return_data)
+
+
+    def stat_reports(self,key,categories=None,fbetas=None,display=True,return_data=False):
+        categories=categories or self.categories
+        fbetas=fbetas or self.fbetas
+        values=self.report[key].unique().tolist()
+        dfs=[]
+        for v in values:
+            _df=self.stat_report(
+                categories=categories,
+                key=key,
+                value=v,
+                display=False,
+                return_data=True)
+            dfs.append(_df)
+        df=pd.concat(dfs)
+        return self._display_return(df,display,return_data)
+
+
+    #
+    # INTERNAL
+    #
+    def _confusion_cols(self,categories):
+        return [f'{t}-{p}' for t in categories for p in categories]
+
+
+    def _display_return(self,out,display,return_data):
+        if display and self.nb_display:
+            self.nb_display(out)
+        if return_data or (not display):
+            return out
+

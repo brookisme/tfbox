@@ -10,7 +10,6 @@ from . import helpers as h
 # HELPERS
 #
 INPUT_BANDS=[0]
-TARGET_COLORS=['#ff0000','#fafafa','#0000aa']
 DESCRIPTION_HEAD="""
     * batch_index: {}
     * image_index: {}
