@@ -1,5 +1,4 @@
 # encoder.yaml
-
 xception:
 
     blocks_config:

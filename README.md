@@ -37,6 +37,42 @@ Additionally, TFBox contains a number of useful tools for TensorFlow, including:
 
 #### MODELS
 
+`tfbox.nn.encoder/decoder/encoder-decoder` use yaml files to combine keras-model-blocks in `tfbox.nn.blocks` to build neural-networks.  The result is an flexible system from which you can build a large variety of models.  Lets start with some examples.
+
+Here is the config for the Xception Network:
+
+xception:
+
+```yaml
+    blocks_config:
+        - conv:
+            filters: 32
+            strides: 2
+        - 64
+        - stack:
+            name: entry_flow_blocks
+            seperable: true
+            depth: 3
+            output_stride: 2
+            layers: [128,256,728]
+        - stack:
+            name: middle_flow
+            nb_repeats: 16
+            depth: 3
+            filters: 728
+        - stack:
+            name: exit_flow_block
+            output_stride: 2
+            filters_list: [728,1024,1024]
+        - stack:
+            name: exit_flow_convs
+            seperable: true
+            residual: false
+            layers: [1536,1536,2048]
+
+        - aspp
+```
+
 
 <a name='#sequence'></a>
 
