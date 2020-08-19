@@ -39,7 +39,7 @@ Additionally, TFBox contains a number of useful tools for TensorFlow, including:
 
 `tfbox.nn.encoder/decoder/encoder-decoder` use yaml files to combine keras-model-blocks in `tfbox.nn.blocks` to build neural-networks.  The result is an flexible system from which you can build a large variety of models.  Lets start with some examples.
 
-Here is the config for the Xception Network:
+Here is the config for the [Xception Network](https://arxiv.org/abs/1610.02357):
 
 xception:
 
@@ -80,7 +80,7 @@ xception:
 
 #### DFSequence
 
-
+`tfbox.loaders.DFSequence` builds instances of `tf.keras.utils.Sequence` for image segmentation models using pandas dataframes. In particular it does almost anything you can imagine - but also can be bit overwhelming.
 
 <a name='#scoring'></a>
 

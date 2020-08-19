@@ -190,17 +190,18 @@ class ScoreBoard(object):
     """ a notebook parser for ScoreKeeper reports
     """
     FBETAS=[1,2,0.5]
-
+    GROUP_KEY='data_split'
+    GROUPS=['train','valid','test']
 
     #
     # STATIC
     #
     def precision_recall(tp,fx):
-        return tp/(tp+fx)
+        return tp/(tp+fx+EPS)
 
 
     def fbeta(p,r,beta=2):
-        return ((1+(beta**2))*p*r)/(((beta**2)*p)+r)
+        return ((1+(beta**2))*p*r)/(((beta**2)*p)+r+EPS)
 
 
     #
@@ -210,6 +211,8 @@ class ScoreBoard(object):
             report,
             categories=[],
             fbetas=FBETAS,
+            groups=GROUPS,
+            group_key=GROUP_KEY,
             accuracy_key='acc',
             nb_display=print,
             drop_na=True):
@@ -220,6 +223,8 @@ class ScoreBoard(object):
         self.report=report
         self.categories=categories
         self.fbetas=fbetas
+        self.group_key=group_key
+        self.groups=groups
         self.accuracy_key=accuracy_key
         self.nb_display=nb_display
 
@@ -270,23 +275,46 @@ class ScoreBoard(object):
             categories=None,
             key=None,
             value=None,
+            groups=None,
+            group_key=None,
             fbetas=None,
             display=True,
             return_data=False):
         categories=categories or self.categories
         fbetas=fbetas or self.fbetas
-        df=self.report
-        if key:
-            df=df[df[key]==value]
-        cm=df[self._confusion_cols(categories)].sum()
-        _df=pd.DataFrame([self.stats(cm,c,categories,fbetas=fbetas) for c in categories])
-        if key:
-            _df.loc[:,key]=value
-            _df=_df[[key]+[k for k in _df.columns if k!=key]]
-        return self._display_return(_df,display,return_data)
+        if group_key is False:
+            groups=[None]
+        else:
+            group_key=group_key or self.group_key
+            groups=groups or self.groups
+        dfs=[]
+        for group_value in groups:
+            df=self.report.copy()
+            if group_key:
+                df=df[df[group_key]==group_value]
+            if key:
+                df=df[df[key]==value]
+            cm=df[self._confusion_cols(categories)].sum()
+            _df=pd.DataFrame([self.stats(cm,c,categories,fbetas=fbetas) for c in categories])
+            if group_key:
+                _df.loc[:,group_key]=group_value
+                _df=_df[[group_key]+[k for k in _df.columns if k!=group_key]]
+            if key:
+                _df.loc[:,key]=value
+                _df=_df[[key]+[k for k in _df.columns if k!=key]]
+            dfs.append(_df)
+        df=pd.concat(dfs)
+        return self._display_return(df,display,return_data)
 
 
-    def stat_reports(self,key,categories=None,fbetas=None,display=True,return_data=False):
+    def stat_reports(self,
+            key,
+            groups=None,
+            group_key=None,
+            categories=None,
+            fbetas=None,
+            display=True,
+            return_data=False):
         categories=categories or self.categories
         fbetas=fbetas or self.fbetas
         values=self.report[key].unique().tolist()
@@ -296,6 +324,8 @@ class ScoreBoard(object):
                 categories=categories,
                 key=key,
                 value=v,
+                group_key=group_key,
+                groups=groups,
                 display=False,
                 return_data=True)
             dfs.append(_df)
