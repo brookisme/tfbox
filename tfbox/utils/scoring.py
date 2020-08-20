@@ -191,7 +191,8 @@ class ScoreBoard(object):
     """
     FBETAS=[1,2,0.5]
     GROUP_KEY='data_split'
-    GROUPS=['train','valid','test']
+    ALL='all'
+    GROUPS=[ALL,'train','valid','test']
 
     #
     # STATIC
@@ -291,7 +292,8 @@ class ScoreBoard(object):
         for group_value in groups:
             df=self.report.copy()
             if group_key:
-                df=df[df[group_key]==group_value]
+                if group_value!=ScoreBoard.ALL:
+                    df=df[df[group_key]==group_value]
             if key:
                 df=df[df[key]==value]
             cm=df[self._confusion_cols(categories)].sum()
