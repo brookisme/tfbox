@@ -69,7 +69,6 @@ xception:
             seperable: true
             residual: false
             layers: [1536,1536,2048]
-
         - aspp
 ```
 
@@ -90,14 +89,13 @@ xception:
 
 
 
+
 <a name='#metrics]'></a>
 
 
 ---
 
 #### METRICS
-
-
 
 <a name='#loss'></a>
 
