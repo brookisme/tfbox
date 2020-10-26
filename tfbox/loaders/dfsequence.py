@@ -118,7 +118,7 @@ class DFSequence(tf.keras.utils.Sequence):
         """
         self.select(index)
         if set_window:
-            self.handler.set_window()
+            self.handler.set_window(window=self._window(self.row))
         if set_augment:
             self.handler.set_augmentation()
         inpt=self.get_input()
@@ -142,7 +142,7 @@ class DFSequence(tf.keras.utils.Sequence):
         targs=[]
         for r in self.batch_rows:
             if set_window:
-                self.handler.set_window()
+                self.handler.set_window(window=self._window(r))
             if set_augment:
                 self.handler.set_augmentation()
             inpts.append(self.get_input(r))
@@ -160,7 +160,6 @@ class DFSequence(tf.keras.utils.Sequence):
             row=self.row
         return self.handler.input(
             row[self.input_column],
-            window=self._window(row),
             return_profile=False)
     
     
@@ -170,7 +169,6 @@ class DFSequence(tf.keras.utils.Sequence):
             row=self.row
         return self.handler.target(
             row[self.target_column],
-            window=self._window(row),
             return_profile=False)
 
         
@@ -285,10 +283,8 @@ class DFSequence(tf.keras.utils.Sequence):
     
     def _localize_path(self,path):
         if isinstance(self.localize,str):
-            m=re.search(REMOTE_HEAD,path)
-            if m:
-                _,e=m.span()
-                path=re.sub(f'^{self.localize}/','',path[e:])
+            path=re.sub(REMOTE_HEAD,'',path)
+            path=re.sub(f'^{self.localize}/','',path)
         if self.local_data_root:
             path=f'{self.local_data_root}/{path}'
         return path
