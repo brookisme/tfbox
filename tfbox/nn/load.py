@@ -58,7 +58,9 @@ def config(
                 cfig_dir=CONFIGS_DIR
             if cfig_dir:
                 cfig=f'{cfig_dir}/{cfig}'
+        print(f'LOADING CONFIG: {cfig}.yaml')
         cfig=h.read_yaml(f'{cfig}.yaml')
+
     else:
         title='config'
     if key_path:
