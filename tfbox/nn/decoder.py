@@ -104,20 +104,21 @@ class Decoder(base.Model):
             skip=self._conditional(skip,self.skip_reducers,index=i)
             x=tf.concat([x,skip],axis=BAND_AXIS)
             x=self._conditional(x,self.refinements,index=i)
-        x=self._conditional(
-            x,
-            self.classifier,
-            test=self.classifier_position==Decoder.BEFORE_UP)
+        # x=self._conditional(
+        #     x,
+        #     self.classifier,
+        #     test=self.classifier_position==Decoder.BEFORE_UP)
         x=blocks.upsample(
             x,
             scale=self._scale(x,inputs),
             mode=self.upsample_mode,
             allow_identity=True)
-        x=self._conditional(
-            x,
-            self.classifier,
-            test=self.classifier_position==Decoder.AFTER_UP)
-        return x
+        # x=self._conditional(
+        #     x,
+        #     self.classifier,
+        #     test=self.classifier_position==Decoder.AFTER_UP)
+        return self.output(x)
+
 
 
     #
