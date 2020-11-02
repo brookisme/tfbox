@@ -740,7 +740,7 @@ class SegmentClassifier(keras.Model):
             filters,
             nb_classes,
             len(kernel_size_list))
-        if len(filters_list)>1:
+        if filters_list and len(filters_list)>1:
             self.preclassifier=Stack(
                 filters_list=filters_list[:-1],
                 kernel_size_list=kernel_size_list[:-1],
@@ -751,23 +751,28 @@ class SegmentClassifier(keras.Model):
                 **stack_config)
         else:
             self.preclassifier=False
-        act=self._activation(nb_classes,output_act)
-        print('OUTPUT_ACTIVATION:',act,output_act)
-        self.classifier=Conv(
-                filters=filters_list[-1],
-                kernel_size=kernel_size_list[-1],
-                batch_norm=output_batch_norm,
-                act=act,
-                act_config=output_act_config,
-                name=self.block_name,
-                named_layers=self.named_layers)
+        if filters_list:
+            self.classifier=Conv(
+                    filters=filters_list[-1],
+                    kernel_size=kernel_size_list[-1],
+                    batch_norm=output_batch_norm,
+                    act=False,
+                    name=self.block_name,
+                    named_layers=self.named_layers)
+        else:
+            self.classifier=False
+        self.act=self._activation(nb_classes,output_act,output_act_config)
 
 
 
     def __call__(self,x,training=False,**kwargs):
         if self.preclassifier:
             x=self.preclassifier(x)
-        return self.classifier(x)
+        if self.classifier:
+            x=self.classifier(x)
+        if self.act:
+            x=self.act(x)
+        return x
 
 
 
@@ -783,9 +788,12 @@ class SegmentClassifier(keras.Model):
             if filters_list[-1]!=nb_classes:
                 raise ValueError('last filters value must equal nb_classes')
         else:
-            if filters is None:
-                filters=nb_classes
-            filters_list=[filters]*(depth-1)+[nb_classes]
+            if filters is False:
+                filters_list=None
+            else:
+                if filters is None:
+                    filters=nb_classes
+                filters_list=[filters]*(depth-1)+[nb_classes]
         return filters_list
 
 
@@ -795,12 +803,15 @@ class SegmentClassifier(keras.Model):
         return kernel_size_list
 
 
-    def _activation(self,nb_classes,act):
+    def _activation(self,nb_classes,act,config):
         if (act is True) or (act==SegmentClassifier.AUTO):
             if nb_classes==1:
                 act='sigmoid'
             else:
                 act='softmax'
+        print('OUTPUT_ACTIVATION:',act,config)
+        if act:
+            act=get_activation(act,name=self._layer_name('activation'),**config)
         return act
 
 
