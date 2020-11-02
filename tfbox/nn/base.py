@@ -54,10 +54,18 @@ class Model(keras.Model):
                     **classifier_config)
             elif classifier_type==Model.GLOBAL_POOLING:
                 raise NotImplementedError('TODO: GAPClassifier')
-            else:
+            elif classifier_type:
                 raise NotImplementedError(f'{classifier_type} is not a valid classifier')
+            else:
+                self.classifier=None
         else:
             self.classifier=None
+
+
+    def output(self,x):
+        if self.classifier:
+            x=self.classifier(x)
+        return x
 
 
     def layer_name(self,group=None,index=None):
