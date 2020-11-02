@@ -131,14 +131,15 @@ class Decoder(base.Model):
 
 
     def _reducer(self,config,index=None):
-        if isinstance(config,int):
-            filters=config
-            config=REDUCER_CONFIG.copy()
-            config['filters']=filters
-        config=config.copy()
-        config=self._named(config,'reducer',index=index)
-        btype=config.pop('block_type','Conv')
-        return blocks.get(btype)(**config)
+        if config:
+            if isinstance(config,int):
+                filters=config
+                config=REDUCER_CONFIG.copy()
+                config['filters']=filters
+            config=config.copy()
+            config=self._named(config,'reducer',index=index)
+            btype=config.pop('block_type','Conv')
+            return blocks.get(btype)(**config)
 
 
     def _refinement(self,config,index=None):
