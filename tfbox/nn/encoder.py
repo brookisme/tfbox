@@ -64,7 +64,7 @@ class Encoder(base.Model):
         elif skips or self.return_empty_skips:
             return x, skips
         else:
-            return x
+            return self.output(x)
 
 
     #
