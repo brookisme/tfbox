@@ -31,13 +31,22 @@ class EncoderDecoder(base.Model):
             classifier_config={
                 'classifier_type': base.Model.SEGMENT,
             },
+            classifier_key_path=None,
+            classifier_is_file_path=False,
+            classifier_cfig_dir=load.TFBOX,
             name=NAME,
             named_layers=True,
             noisy=True):
         super(EncoderDecoder, self).__init__(
             name=name,
             named_layers=named_layers,
+            nb_classes=nb_classes,
+            classifier_config=classifier_config,
+            classifier_key_path=classifier_key_path,
+            classifier_is_file_path=classifier_is_file_path,
+            classifier_cfig_dir=classifier_cfig_dir,
             noisy=noisy)
+        print('******',nb_classes,classifier_config)
         if isinstance(model_config,str):
             model_config=load.config(
                     cfig=model_config,
@@ -69,14 +78,15 @@ class EncoderDecoder(base.Model):
         decoder_config['output_size']=self._value(
             output_size,
             decoder_config.get('output_size'))
-        self.encoder=Encoder(model_config=encoder_config,return_empty_skips=True)
-        self.decoder=Decoder(nb_classes=nb_classes,model_config=decoder_config)
+        self.encoder=Encoder(nb_classes=None,model_config=encoder_config,return_empty_skips=True)
+        self.decoder=Decoder(nb_classes=None,model_config=decoder_config)
 
 
     def __call__(self,inputs,training=False):
         x,skips=self.encoder(inputs)
         self.decoder.set_output(inputs)
-        return self.decoder(x,skips,training)
+        x=self.decoder(x,skips,training)
+        return self.output(x)
 
 
     #
