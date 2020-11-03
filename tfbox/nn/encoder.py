@@ -9,7 +9,6 @@ DEFAULT_BTYPE='stack'
 INT_BTYPE='conv'
 STACK='stack'
 
-
 #
 # Encoder: a flexible generic encoder
 # 
@@ -18,17 +17,14 @@ class Encoder(base.Model):
     # CONSTANTS
     #
     NAME='Encoder'
+    DEFAULT_CLASSIFIER=base.Model.GLOBAL_POOLING
 
 
     def __init__(self,
+            config,
+            file_name=None,
+            folder=load.TFBOX,
             nb_classes=None,
-            model_config=NAME,
-            key_path='xception',
-            is_file_path=False,
-            cfig_dir=load.TFBOX,
-            classifier_config={
-                'classifier_type': base.Model.GLOBAL_POOLING,
-            },
             return_empty_skips=False,
             name=NAME,
             named_layers=True,
@@ -36,19 +32,20 @@ class Encoder(base.Model):
         super(Encoder, self).__init__(
             name=name,
             named_layers=named_layers,
-            noisy=noisy,
-            nb_classes=nb_classes,
-            classifier_config=classifier_config)
-        if isinstance(model_config,str):
-            model_config=load.config(
-                    cfig=model_config,
-                    key_path=key_path,
-                    is_file_path=is_file_path,
-                    cfig_dir=cfig_dir,
-                    noisy=noisy )
-        blocks_config=model_config['blocks_config']
+            noisy=noisy)
+        config=load.config(
+            config,
+            file_name or Encoder.NAME,
+            folder)
+        blocks_config=config['blocks_config']
         self.stacked_blocks=[self._stacked_blocks(c) for c in blocks_config]
         self.return_empty_skips=return_empty_skips
+        if nb_classes:
+            self.set_classifier(
+                nb_classes,
+                config.get('classifier'),
+                folder=folder)
+
 
 
     def __call__(self,inputs,training=False):

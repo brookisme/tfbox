@@ -11,65 +11,56 @@ class EncoderDecoder(base.Model):
     #
     NAME='EncoderDecoder'
     def __init__(self,
+            config,
+            file_name=None,
+            folder=load.TFBOX,
             nb_classes=None,
-            model_config=NAME,
-            key_path=NAME,
-            is_file_path=False,
-            cfig_dir=load.TFBOX,
-            encoder_config=None,
-            encoder_key_path=None,
-            encoder_is_file_path=None,
-            encoder_cfig_dir=None,
-            decoder_config=None,
-            decoder_key_path=None,
-            decoder_is_file_path=None,
-            decoder_cfig_dir=None,
-            classifier_config={
-                'classifier_type': base.Model.SEGMENT,
-            },
-            classifier_key_path=None,
-            classifier_is_file_path=False,
-            classifier_cfig_dir=load.TFBOX,
             name=NAME,
             named_layers=True,
             noisy=True):
+
         super(EncoderDecoder, self).__init__(
             name=name,
             named_layers=named_layers,
-            nb_classes=nb_classes,
-            classifier_config=classifier_config,
-            classifier_key_path=classifier_key_path,
-            classifier_is_file_path=classifier_is_file_path,
-            classifier_cfig_dir=classifier_cfig_dir,
             noisy=noisy)
 
-        if isinstance(model_config,str):
-            model_config=load.config(
-                    cfig=model_config,
-                    key_path=key_path,
-                    is_file_path=is_file_path,
-                    cfig_dir=cfig_dir,
-                    noisy=noisy )
-            encoder_config=model_config['encoder']
-            decoder_config=model_config['decoder']
-        else:
-            encoder_config=load.config(
-                    cfig=encoder_config,
-                    key_path=self._value(encoder_key_path,key_path),
-                    is_file_path=self._value(encoder_is_file_path,is_file_path),
-                    cfig_dir=self._value(encoder_cfig_dir,cfig_dir),
-                    noisy=noisy )
-            decoder_config=load.config(
-                    cfig=decoder_config,
-                    key_path=self._value(decoder_key_path,key_path),
-                    is_file_path=self._value(decoder_is_file_path,is_file_path),
-                    cfig_dir=self._value(decoder_cfig_dir,cfig_dir),
-                    noisy=noisy )
+
+        self.config=load.config(
+            config,
+            file_name or EncoderDecoder.NAME,
+            folder)
+
+
+
+        encoder_config=self.config['encoder']
+        print('Encoder1:',encoder_config)
+        encoder_config=load.config(
+            encoder_config,
+            Encoder.NAME,
+            folder)
+        print('Encoder2:',encoder_config)
+
+
+
+
+        decoder_config=self.config['decoder']
+        print('Decoder1:',decoder_config)
+        decoder_config=load.config(
+            self.config,
+            Decoder.NAME,
+            folder)
+        print('Decoder2:',decoder_config)
+
+
+        if nb_classes:
+            self.set_classifier(
+                nb_classes,
+                self.config.get('classifier'),
+                folder=folder)
+
+        
         # encoder 
-        self.encoder=Encoder(
-            nb_classes=None,
-            model_config=encoder_config,
-            return_empty_skips=True)
+        self.encoder=Encoder(encoder_config,return_empty_skips=True)
         # decoder
         oc=decoder_config.get('output_conv')
         if isinstance(oc,dict):
@@ -77,9 +68,7 @@ class EncoderDecoder(base.Model):
         elif oc is None:
             oc=nb_classes
         decoder_config['output_conv']=oc
-        self.decoder=Decoder(
-            nb_classes=None,
-            model_config=decoder_config)
+        self.decoder=Decoder(decoder_config)
 
 
     def __call__(self,inputs,training=False):

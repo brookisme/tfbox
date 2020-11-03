@@ -35,60 +35,47 @@ class Decoder(base.Model):
     # CONSTANTS
     #
     NAME='Decoder'
+    DEFAULT_CLASSIFIER=base.Model.SEGMENT
     UPSAMPLE_MODE='bilinear'
     BEFORE_UP='before'
     AFTER_UP='after'
 
 
     def __init__(self,
+            config,
+            file_name=None,
+            folder=load.TFBOX,
             nb_classes=None,
-            model_config=NAME,
-            output_size=None,
-            output_ratio=None,
-            output_conv=None,
-            output_conv_position=None,
-            safe_rescale=True,
-            key_path='decode_256_f128-64_res',
-            is_file_path=False,
-            cfig_dir=load.TFBOX,
-            classifier_config={
-                'classifier_type': base.Model.SEGMENT,
-            },
             name=NAME,
             named_layers=True,
             noisy=True):
         super(Decoder, self).__init__(
             name=name,
             named_layers=named_layers,
-            noisy=noisy,
-            nb_classes=nb_classes,
-            classifier_config=classifier_config)
-        if isinstance(model_config,str):
-            model_config=load.config(
-                    cfig=model_config,
-                    key_path=key_path,
-                    is_file_path=is_file_path,
-                    cfig_dir=cfig_dir,
-                    noisy=noisy )
+            noisy=noisy)
+        self.config=load.config(
+            config,
+            file_name or Decoder.NAME,
+            folder)
         # parse config
-        self.model_config=model_config
-        self._output_size=self._value(output_size,'output_size')
-        self._output_ratio=self._value(output_ratio,'output_ratio',1)
-        output_conv=self._value(output_conv,'output_conv')
-        self.output_conv_position=self._value(
-            output_conv_position,
+        self._output_size=self.config.get('output_size')
+        self._output_ratio=self.config.get('output_ratio',1)
+        self.output_conv_position=self.config.get(
             'output_conv_position',
             Decoder.AFTER_UP)
-        self.safe_rescale=self._value(safe_rescale,'safe_rescale',True)
-        input_reducer=model_config.get('input_reducer')
-        skip_reducers=model_config.get('skip_reducers')
-        refinements=model_config.get('refinements')
-        self.upsample_mode=model_config.get('upsample_mode',Decoder.UPSAMPLE_MODE)
-        classifier_config=model_config.get('classifier',False)
+        self.safe_rescale=self.config.get('safe_rescale',True)
+        input_reducer=self.config.get('input_reducer')
+        skip_reducers=self.config.get('skip_reducers')
+        refinements=self.config.get('refinements')
+        self.upsample_mode=self.config.get(
+            'upsample_mode',
+            Decoder.UPSAMPLE_MODE)
         # decoder
         self._upsample_scale=None
         self.input_reducer=self._reducer(input_reducer)
-        self.output_conv=self._output_conv(output_conv,nb_classes)
+        self.output_conv=self._output_conv(
+            self.config.get('output_conv'),
+            nb_classes)
         if skip_reducers:
             self.skip_reducers=[
                 self._reducer(r,index=i) for i,r in enumerate(skip_reducers) ]
@@ -99,6 +86,11 @@ class Decoder(base.Model):
                 self._refinement(r,index=i) for i,r in enumerate(refinements) ]
         else:
             self.refinements=None
+        if nb_classes:
+            self.set_classifier(
+                nb_classes,
+                config.get('classifier'),
+                folder=folder)
 
 
     def set_output(self,like):
@@ -214,7 +206,7 @@ class Decoder(base.Model):
 
     def _value(self,value,key,default=None):
         if value is None:
-            value=self.model_config.get(key,default)
+            value=self.config.get(key,default)
         return value
 
 

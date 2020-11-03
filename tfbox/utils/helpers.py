@@ -44,6 +44,24 @@ def camel(string):
     return re.sub('[\ \-\_]','',str(string).title())
 
 
+def falsey(value):
+    if isinstance(value,str):
+        value=value.lower()!='false'
+    return value is False
+
+
+def truey(value):
+    if isinstance(value,str):
+        value=value.lower()=='true'
+    return value is True
+
+
+def noney(value):
+    if isinstance(value,str) and value.lower()=='none':
+        value=None
+    return value is None
+
+
 #
 # UTILS
 #

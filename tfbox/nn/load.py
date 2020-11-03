@@ -2,16 +2,18 @@ import os
 import re
 from pprint import pprint
 import tfbox.utils.helpers as h
-_nn_dir=os.path.dirname(os.path.realpath(__file__))
+from pathlib import Path
+_nn_dir=Path(__file__).parent
+_cwd=Path.cwd()
 #
 # CONSTANTS
 #
 TFBOX='tfbox'
+LOCAL='local'
 CONFIGS_DIR=f'{_nn_dir}/configs'
+LOCAL_CONFIGS_DIR=f'{_cwd}/nn/configs'
 YAML_RGX='.(yaml|yml)$'
 JSON_RGX='.json$'
-
-
 
 
 
@@ -19,79 +21,99 @@ JSON_RGX='.json$'
 # I/0
 #
 def config(
-        cfig=None,
-        key_path=None,
-        cfig_dir=TFBOX,
-        is_file_path=False,
-        config_string=None,
+        config,
+        file_name=None,
+        folder=TFBOX,
         noisy=False,
         **kwargs):
     """ load model configs
     Args:
-        - cfig<str|dict|None>:
-            * <str>: 
-                - name (w/o '.yaml' ext) of config file
-                - file_path (see is_file_path below)
-            * <dict>: model config as dict
-            * None: requires config_string
-        - key_path<str>: 
-            dot-path for key in cfig-file containing the config
-        - cfig_dir<str>:
+        - config<str|dict>:
+
+            <str>: 
+                - relative file path if '.yaml' ext
+                - otherwise: comma/dot separated string
+
+                    * c.d.e     => key_path='c.d.e'  
+
+                    * b,c.d.e   => file_name='b.yaml'
+                                   key_path='c.d.e'
+                    
+                    * a,b,c.d.e => folder='a'
+                                   file_name='b.yaml'
+                                   key_path='c.d.e'
+                    
+                    where key path c.d.e extracts `yaml_dict[c][d][e]` 
+                    from the yaml-dictionary. note: c,d,e will be 
+                    converted from camel to snake case.
+
+            <dict>: 
+                - if dict contains 'key_path':
+                    extract key_path, file_name, folder from dict
+                - otherwise: dict is config dictionary
+
+        - file_name<str|None>: a default file_name
+        - folder<str|None|bool>:
             - tfbox,None,True: use tfbox config file (tfbox.nn.configs)
-            - False: current working directory
+            - False or string-false: current working directory
             - Otherwise: directory path
-        - is_file_path<bool>:
-            - if true: cfig arg is the path to the config file
-        - config_string<str|None>:
-            - if config_string derive above args using `parse_config_string`
+
         - kwargs: key-value args to update the loaded config
     """
-    if config_string:
-        cfig, key_path, is_file_path=parse_config_string(
-            config_string,
-            cfig=cfig)
-    if isinstance(cfig,str):
-        title=cfig
-        cfig=h.snake(cfig)
-        if not is_file_path:
-            if cfig_dir in [TFBOX,None,True]:
-                cfig_dir=CONFIGS_DIR
-            if cfig_dir:
-                cfig=f'{cfig_dir}/{cfig}'
-        print(f'LOADING CONFIG: {cfig}.yaml')
-        cfig=h.read_yaml(f'{cfig}.yaml')
-
-    else:
-        title='config'
-    if key_path:
-        key_path=h.snake(key_path)
-        if isinstance(key_path,str):
-            key_path=key_path.split('.')
-        for k in key_path: cfig=cfig[k]
-    if kwargs:
-        if isinstance(cfig,dict):
-            cfig.update(kwargs)
+    if isinstance(config,str):
+        if re.search(YAML_RGX,config):
+            path=config
         else:
-            raise ValueError('kwargs only allowed for key-value configs.')
-    if noisy:
-        pprint(cfig)
-    return cfig
+            path, key_path=parse_config_string(config,file_name,folder)           
+    else:
+        if 'key_path' in config:
+            key_path=config['key_path']
+            path=config_path(
+                config.get('file_name',file_name),
+                config.get('folder',folder))
+        else:
+            path=None
+            key_path=None
+    if path:
+        config=h.read_yaml(path)
+    if key_path:
+        if isinstance(key_path,str):
+            key_path=h.snake(key_path).split('.')
+        for k in key_path: config=config[k]
+    if kwargs:
+        config.update(kwargs)
+        pprint(config)
+    return config
 
 
-
-def parse_config_string(config_string,cfig=None):
-    key_path=is_file_path=None
-    parts=config_string.split(':')
-    if cfig:
-        parts=[cfig]+parts
+def parse_config_string(config_string,file_name=None,folder=TFBOX):
+    # get key_path,file_name,folder
+    parts=config_string.split(',')
     nb_parts=len(parts)
-    cfig=parts[0]
-    if nb_parts>1:
-        key_path=parts[1]
-        if nb_parts>2:
-            is_file_path=str(parts[2]).lower()=='true'
-    return cfig, key_path, is_file_path
+    if nb_parts==3:
+        folder=parts[0] or folder
+        file_name=parts[1] or file_name
+    elif nb_parts==2:
+        file_name=parts[0] or file_name
+    key_path=parts[-1]
+    return config_path(file_name,folder), key_path
 
 
+def config_path(file_name=None,folder=TFBOX):
+    # process file_name/folder
+    if not re.search(YAML_RGX,file_name):
+        file_name=f'{h.snake(file_name)}.yaml'
+    if (folder==TFBOX) or h.truey(folder):
+        folder=CONFIGS_DIR
+    elif (folder==LOCAL):
+        folder=LOCAL_CONFIGS_DIR
+    elif h.falsey(folder):
+        folder=_cwd
+    # get path
+    if h.noney(folder):
+        path=file_name
+    else:
+        path=f'{folder}/{file_name}'
+    return path
 
 
