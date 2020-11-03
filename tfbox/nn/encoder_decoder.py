@@ -10,11 +10,8 @@ class EncoderDecoder(base.Model):
     # CONSTANTS
     #
     NAME='EncoderDecoder'
-
-
     def __init__(self,
             nb_classes=None,
-            output_size=None,
             model_config=NAME,
             key_path=NAME,
             is_file_path=False,
@@ -27,7 +24,6 @@ class EncoderDecoder(base.Model):
             decoder_key_path=None,
             decoder_is_file_path=None,
             decoder_cfig_dir=None,
-            classifier_position=Decoder.AFTER_UP,
             classifier_config={
                 'classifier_type': base.Model.SEGMENT,
             },
@@ -46,7 +42,7 @@ class EncoderDecoder(base.Model):
             classifier_is_file_path=classifier_is_file_path,
             classifier_cfig_dir=classifier_cfig_dir,
             noisy=noisy)
-        print('******',nb_classes,classifier_config)
+
         if isinstance(model_config,str):
             model_config=load.config(
                     cfig=model_config,
@@ -69,17 +65,21 @@ class EncoderDecoder(base.Model):
                     is_file_path=self._value(decoder_is_file_path,is_file_path),
                     cfig_dir=self._value(decoder_cfig_dir,cfig_dir),
                     noisy=noisy )
-        decoder_config['classifier_config']=self._value(
-                decoder_config.get('classifier_config'),
-                classifier_config )
-        decoder_config['classifier_position']=self._value(
-            decoder_config.get('classifier_position'),
-            classifier_position )
-        decoder_config['output_size']=self._value(
-            output_size,
-            decoder_config.get('output_size'))
-        self.encoder=Encoder(nb_classes=None,model_config=encoder_config,return_empty_skips=True)
-        self.decoder=Decoder(nb_classes=None,model_config=decoder_config)
+        # encoder 
+        self.encoder=Encoder(
+            nb_classes=None,
+            model_config=encoder_config,
+            return_empty_skips=True)
+        # decoder
+        oc=decoder_config.get('output_conv')
+        if isinstance(oc,dict):
+            oc['filters']=oc.get('filters',nb_classes)
+        elif oc is None:
+            oc=nb_classes
+        decoder_config['output_conv']=oc
+        self.decoder=Decoder(
+            nb_classes=None,
+            model_config=decoder_config)
 
 
     def __call__(self,inputs,training=False):

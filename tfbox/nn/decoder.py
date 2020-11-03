@@ -15,6 +15,12 @@ REFINEMENT_CONFIG={
     'depth': 2,
     'residual': True
 }
+OUTPUT_CONV_CONFIG={
+    'kernel_size': 3,
+    'depth': 1,
+    'residual': False,
+    'act': True
+}
 BAND_AXIS=-1
 SAFE_RESCALE_ERROR=(
     'tfbox.Decoder: '
@@ -36,14 +42,15 @@ class Decoder(base.Model):
 
     def __init__(self,
             nb_classes=None,
+            model_config=NAME,
             output_size=None,
             output_ratio=None,
+            output_conv=None,
+            output_conv_position=None,
             safe_rescale=True,
-            model_config=NAME,
             key_path='decode_256_f128-64_res',
             is_file_path=False,
             cfig_dir=load.TFBOX,
-            classifier_position=AFTER_UP,
             classifier_config={
                 'classifier_type': base.Model.SEGMENT,
             },
@@ -64,9 +71,15 @@ class Decoder(base.Model):
                     cfig_dir=cfig_dir,
                     noisy=noisy )
         # parse config
-        self._output_size=output_size or model_config.get('output_size')
-        self._output_ratio=output_ratio or model_config.get('output_ratio',1)
-        self.safe_rescale=safe_rescale or model_config.get('safe_rescale',True)
+        self.model_config=model_config
+        self._output_size=self._value(output_size,'output_size')
+        self._output_ratio=self._value(output_ratio,'output_ratio',1)
+        output_conv=self._value(output_conv,'output_conv')
+        self.output_conv_position=self._value(
+            output_conv_position,
+            'output_conv_position',
+            Decoder.AFTER_UP)
+        self.safe_rescale=self._value(safe_rescale,'safe_rescale',True)
         input_reducer=model_config.get('input_reducer')
         skip_reducers=model_config.get('skip_reducers')
         refinements=model_config.get('refinements')
@@ -75,6 +88,7 @@ class Decoder(base.Model):
         # decoder
         self._upsample_scale=None
         self.input_reducer=self._reducer(input_reducer)
+        self.output_conv=self._output_conv(output_conv,nb_classes)
         if skip_reducers:
             self.skip_reducers=[
                 self._reducer(r,index=i) for i,r in enumerate(skip_reducers) ]
@@ -85,7 +99,6 @@ class Decoder(base.Model):
                 self._refinement(r,index=i) for i,r in enumerate(refinements) ]
         else:
             self.refinements=None
-        self.classifier_position=classifier_position
 
 
     def set_output(self,like):
@@ -104,19 +117,19 @@ class Decoder(base.Model):
             skip=self._conditional(skip,self.skip_reducers,index=i)
             x=tf.concat([x,skip],axis=BAND_AXIS)
             x=self._conditional(x,self.refinements,index=i)
-        # x=self._conditional(
-        #     x,
-        #     self.classifier,
-        #     test=self.classifier_position==Decoder.BEFORE_UP)
+        x=self._conditional(
+            x,
+            self.output_conv,
+            test=self.output_conv_position==Decoder.BEFORE_UP)
         x=blocks.upsample(
             x,
             scale=self._scale(x,inputs),
             mode=self.upsample_mode,
             allow_identity=True)
-        # x=self._conditional(
-        #     x,
-        #     self.classifier,
-        #     test=self.classifier_position==Decoder.AFTER_UP)
+        x=self._conditional(
+            x,
+            self.output_conv,
+            test=self.output_conv_position==Decoder.AFTER_UP)
         return self.output(x)
 
 
@@ -132,26 +145,48 @@ class Decoder(base.Model):
 
 
     def _reducer(self,config,index=None):
-        if config:
-            if isinstance(config,int):
-                filters=config
-                config=REDUCER_CONFIG.copy()
-                config['filters']=filters
-            config=config.copy()
-            config=self._named(config,'reducer',index=index)
-            btype=config.pop('block_type','Conv')
-            return blocks.get(btype)(**config)
+        return self._configurable_block(
+            config,
+            REDUCER_CONFIG,
+            'Conv',
+            'reducer',
+            index=index)
 
 
     def _refinement(self,config,index=None):
-        if isinstance(config,int):
-            filters=config
-            config=REFINEMENT_CONFIG.copy()
-            config['filters']=filters
-        config=config.copy()
-        config=self._named(config,'refinements',index=index)
-        btype=config.pop('block_type','Stack')
-        return blocks.get(btype)(**config)
+        return self._configurable_block(
+            config,
+            REFINEMENT_CONFIG,
+            'Stack',
+            'refinements',
+            index=index)
+
+
+    def _output_conv(self,config,nb_classes):
+        if config is None:
+            config=nb_classes
+        return self._configurable_block(
+            config,
+            OUTPUT_CONV_CONFIG,
+            'Stack',
+            'output_conv')
+
+
+    def _configurable_block(self,
+            config,
+            default_config,
+            default_btype,
+            root_name,
+            index=None):
+        if config:
+            if isinstance(config,int):
+                filters=config
+                config=default_config.copy()
+                config['filters']=filters
+            config=config.copy()
+            config=self._named(config,root_name,index=index)
+            btype=config.pop('block_type',default_btype)
+            return blocks.get(btype)(**config)
 
 
     def _output_rescale(self,value):
@@ -175,3 +210,11 @@ class Decoder(base.Model):
                 action=action[index]
             x=action(x)
         return x
+
+
+    def _value(self,value,key,default=None):
+        if value is None:
+            value=self.model_config.get(key,default)
+        return value
+
+
