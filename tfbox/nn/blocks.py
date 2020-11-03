@@ -686,30 +686,6 @@ class SegmentClassifier(keras.Model):
     AUTO='auto'
 
 
-
-    #
-    # STATIC
-    #
-    @staticmethod
-    def from_config(
-            cfig='blocks',
-            key_path='segment_k3',
-            cfig_dir=load.TFBOX,
-            is_file_path=False,
-            config_string=None,
-            **kwargs):
-        config=load.config(
-            cfig=cfig,
-            key_path=key_path,
-            cfig_dir=cfig_dir,
-            is_file_path=is_file_path,
-            config_string=config_string,
-            **kwargs)
-        print('SegmentClassifier:')
-        pprint(config)
-        return SegmentClassifier(**config)
-
-
     #
     # PUBLIC
     #

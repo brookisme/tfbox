@@ -50,7 +50,6 @@ class Model(keras.Model):
             classifier_type=config.pop(
                 'classifier_type',
                 self.DEFAULT_CLASSIFIER)
-            print('BOOM',NAME,self.DEFAULT_CLASSIFIER,Model.DEFAULT_CLASSIFIER)
             if classifier_type==Model.SEGMENT:
                 self.classifier=blocks.SegmentClassifier(
                     nb_classes=nb_classes,
