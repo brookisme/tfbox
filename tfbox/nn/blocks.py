@@ -761,7 +761,10 @@ class SegmentClassifier(keras.Model):
 
     def _filters_list(self,filters_list,filters,nb_classes,depth):
         if filters_list:
-            if filters_list[-1]!=nb_classes:
+            out_filters=filters_list[-1]
+            if h.noney(out_filters):
+                filters_list[-1]=nb_classes
+            elif filters_list[-1]!=nb_classes:
                 raise ValueError('last filters value must equal nb_classes')
         else:
             if filters is False:
