@@ -15,6 +15,7 @@ class EncoderDecoder(base.Model):
             file_name=None,
             folder=load.TFBOX,
             nb_classes=None,
+            from_logits=None,
             name=NAME,
             named_layers=True,
             noisy=True):
@@ -51,10 +52,9 @@ class EncoderDecoder(base.Model):
             self.set_classifier(
                 nb_classes,
                 self.config.get('classifier'),
-                folder=folder)
-
+                folder=folder,
+                from_logits=from_logits)
         
-
 
     def __call__(self,inputs,training=False):
         x,skips=self.encoder(inputs)

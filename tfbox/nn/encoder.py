@@ -25,6 +25,7 @@ class Encoder(base.Model):
             file_name=None,
             folder=load.TFBOX,
             nb_classes=None,
+            from_logits=None,
             return_empty_skips=False,
             name=NAME,
             named_layers=True,
@@ -44,8 +45,8 @@ class Encoder(base.Model):
             self.set_classifier(
                 nb_classes,
                 config.get('classifier'),
-                folder=folder)
-
+                folder=folder,
+                from_logits=from_logits)
 
 
     def __call__(self,inputs,training=False):

@@ -45,6 +45,7 @@ class Decoder(base.Model):
             file_name=None,
             folder=load.TFBOX,
             nb_classes=None,
+            from_logits=None,
             name=NAME,
             named_layers=True,
             noisy=True):
@@ -89,7 +90,8 @@ class Decoder(base.Model):
             self.set_classifier(
                 nb_classes,
                 config.get('classifier'),
-                folder=folder)
+                folder=folder,
+                from_logits=from_logits)
 
 
     def set_output(self,like):

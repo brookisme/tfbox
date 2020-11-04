@@ -44,7 +44,10 @@ class Model(keras.Model):
             nb_classes,
             config,
             file_name='classifier',
-            folder=load.TFBOX):
+            folder=load.TFBOX,
+            from_logits=None):
+        if from_logits in [True,False]:
+            config=self._update_activation(config,from_logits)
         if nb_classes and config:
             if config is True:
                 config={}
@@ -74,6 +77,16 @@ class Model(keras.Model):
     def layer_name(self,group=None,index=None):
         return blocks.layer_name(self.model_name,group,index=index,named=self.named_layers)
 
+
+    def _update_activation(self,config,from_logits):
+        if config is True:
+            config={}
+        if config is False:
+            config={
+                'filters': False
+            }
+        config['output_act']=not from_logits
+        return config
 
 
 
