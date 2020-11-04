@@ -1,4 +1,3 @@
-from pprint import pprint
 import tensorflow as tf
 from tensorflow.keras import layers
 from . import base

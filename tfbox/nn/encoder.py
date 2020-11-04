@@ -56,9 +56,7 @@ class Encoder(base.Model):
                 xin=x
                 x=block(x)
                 skips=self._update_skips(block,skips,x)
-        if self.classifier:
-            return self.classifier(x)
-        elif skips or self.return_empty_skips:
+        if skips or self.return_empty_skips:
             return x, skips
         else:
             return self.output(x)
