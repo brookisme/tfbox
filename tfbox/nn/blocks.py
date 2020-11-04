@@ -82,6 +82,52 @@ def upsample(
     return x
 
 
+
+def build_block(config,btype=None,index=None):
+    config=_config_dict(config)
+    btype=config.pop('btype',btype or DEFAULT_BTYPE)
+    name=config.get('name')
+    if index and name:
+        config['name']=f'{name}.{index}'
+    return get(btype)(**config)
+
+
+def build_blocks(config,indexed=True,singles_as_block=False):
+    block_stack=[]
+    layers=config.pop('layers',[{}])
+    nb_repeats=config.pop('nb_repeats',1)
+    as_block=singles_as_block and (nb_repeats==1) and (layers==[{}])
+    for i in range(nb_repeats):
+        for j,c in enumerate(layers):
+            if indexed and (not as_block):
+                index=f'{i}-{j}'
+            else:
+                index=None
+            cfg=config.copy()
+            cfg.update(_config_dict(c))
+            block_stack.append(
+                build_block(cfg,index=index))
+    if as_block:
+        return block_stack[0]
+    else:
+        return block_stack
+
+
+def _config_dict(config):
+    if not config:
+        config={}
+    elif isinstance(config,str):
+        config={
+            'btype': config,
+        }
+    elif isinstance(config,int):
+        config={
+            'btype': INT_BTYPE,
+            'filters': config,
+        }
+    return config.copy()
+
+
 #
 # GENERAL BLOCKS 
 #
@@ -613,8 +659,14 @@ class Residual(keras.Model):
             identity=False,
             filters=None,
             residual=True,
+            concat=False,
             **config):
-        self.block=block
+        super(Residual, self).__init__()
+        if isinstance(block,dict):
+            self.block=build_blocks(block)
+        else:
+            self.block=block
+        self.concat=concat
         self.residual=self._residual(
             residual,
             identity,
@@ -629,8 +681,16 @@ class Residual(keras.Model):
             res=self.residual(x)
         else:
             res=False
-        if res:
-            x=layers.add([res,self.block(x)])
+        if isinstance(self.block,list):
+            for b in self.block:
+                x=b(x)        
+        else:
+            x=self.block(x)
+        if res is not False:
+            if self.concat:
+                x=layers.Concatenate()([res,x])
+            else:
+                x=layers.add([res,x])
         return x
 
 
@@ -801,6 +861,7 @@ BLOCKS={
     'conv': Conv,
     'stack': Stack,
     'group': Group,
+    'residual': Residual,
     'squeeze_excitation': SqueezeExcitation,
     'aspp': ASPP,
     'segment_classifier': SegmentClassifier
@@ -810,7 +871,10 @@ ACTIVATIONS={
     'sigmoid': activations.sigmoid,
     'softmax': layers.Softmax
 }
-
+STACK_BTYPE='stack'
+CONV_BTYPE='conv'
+INT_BTYPE=CONV_BTYPE
+DEFAULT_BTYPE=STACK_BTYPE
 
 
 
