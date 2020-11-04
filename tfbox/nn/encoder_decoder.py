@@ -36,7 +36,7 @@ class EncoderDecoder(base.Model):
         # decoder
         decoder_config=self.config['decoder']
         decoder_config=load.config(
-            self.config,
+            decoder_config,
             Decoder.NAME,
             folder)
         oc=decoder_config.get('output_conv')
