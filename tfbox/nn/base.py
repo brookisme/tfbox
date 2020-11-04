@@ -46,10 +46,13 @@ class Model(keras.Model):
             file_name='classifier',
             folder=load.TFBOX):
         if nb_classes and config:
-            config=load.config(config,file_name,folder)
-            classifier_type=config.pop(
-                'classifier_type',
-                self.DEFAULT_CLASSIFIER)
+            if config is True:
+                config={}
+            elif isinstance(config,str):
+                config={ 'classifier_type': config }
+            else:
+                config=load.config(config,file_name,folder)
+            classifier_type=config.pop( 'classifier_type', self.DEFAULT_CLASSIFIER )
             if classifier_type==Model.SEGMENT:
                 self.classifier=blocks.SegmentClassifier(
                     nb_classes=nb_classes,
