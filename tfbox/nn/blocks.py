@@ -94,6 +94,7 @@ def build_block(config,btype=None,index=None):
 
 def build_blocks(config,indexed=True,singles_as_block=False):
     block_stack=[]
+    config=_config_dict(config)
     layers=config.pop('layers',[{}])
     nb_repeats=config.pop('nb_repeats',1)
     as_block=singles_as_block and (nb_repeats==1) and (layers==[{}])
@@ -125,6 +126,16 @@ def _config_dict(config):
             'btype': INT_BTYPE,
             'filters': config,
         }
+    else:
+        nb_keys=len(config)
+        if nb_keys==1:
+            key, value=next(iter(config.items()))
+            if key in BLOCKS:
+                btype=key
+                config=value
+            else:
+                btype=DEFAULT_BTYPE
+            config['btype']=btype
     return config.copy()
 
 
