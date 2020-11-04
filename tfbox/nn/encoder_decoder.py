@@ -16,6 +16,7 @@ class EncoderDecoder(base.Model):
             folder=load.TFBOX,
             nb_classes=None,
             from_logits=None,
+            add_classifier=False,
             name=NAME,
             named_layers=True,
             noisy=True):
@@ -33,22 +34,22 @@ class EncoderDecoder(base.Model):
             encoder_config,
             Encoder.NAME,
             folder)
-        self.encoder=Encoder(encoder_config,return_empty_skips=True)
+        self.encoder=Encoder(
+            encoder_config,
+            return_empty_skips=True,
+            add_classifier=False)
         # decoder
         decoder_config=self.config['decoder']
         decoder_config=load.config(
             decoder_config,
             Decoder.NAME,
             folder)
-        oc=decoder_config.get('output_conv')
-        if isinstance(oc,dict):
-            oc['filters']=oc.get('filters',nb_classes)
-        elif oc is None:
-            oc=nb_classes
-        decoder_config['output_conv']=oc
-        self.decoder=Decoder(decoder_config)
+        self.decoder=Decoder(
+            decoder_config,
+            nb_classes=nb_classes,
+            add_classifier=False)
         # classifier
-        if nb_classes:
+        if add_classifier and nb_classes:
             self.set_classifier(
                 nb_classes,
                 self.config.get('classifier'),

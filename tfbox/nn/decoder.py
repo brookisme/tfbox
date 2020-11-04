@@ -46,6 +46,7 @@ class Decoder(base.Model):
             folder=load.TFBOX,
             nb_classes=None,
             from_logits=None,
+            add_classifier=False,
             name=NAME,
             named_layers=True,
             noisy=True):
@@ -86,7 +87,7 @@ class Decoder(base.Model):
                 self._refinement(r,index=i) for i,r in enumerate(refinements) ]
         else:
             self.refinements=None
-        if nb_classes:
+        if add_classifier and nb_classes:
             self.set_classifier(
                 nb_classes,
                 config.get('classifier'),
@@ -156,7 +157,9 @@ class Decoder(base.Model):
 
 
     def _output_conv(self,config,nb_classes):
-        if config is None:
+        if isinstance(config,dict):
+            config['filters']=config.get('filters') or nb_classes
+        elif config is None:
             config=nb_classes
         return self._configurable_block(
             config,
