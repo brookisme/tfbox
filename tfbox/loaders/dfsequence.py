@@ -37,6 +37,7 @@ class DFSequence(tf.keras.utils.Sequence):
             limit=None,
             localize=None,
             local_data_root=LOCAL_DATA_ROOT,
+            read_from_gcs=False,
             input_column=INPUT_COL,
             target_column=TARGET_COL,
             target_resolution=None,
@@ -60,7 +61,10 @@ class DFSequence(tf.keras.utils.Sequence):
             raise ValueError('onehot encoding requires nb_classes')
         self.batch_size=batch_size
         self.shuffle=shuffle
-        self.localize=localize
+        if read_from_gcs:
+            self.localize=False
+        else:
+            self.localize=localize
         self._set_columns(
             input_column,
             target_column,
@@ -81,6 +85,7 @@ class DFSequence(tf.keras.utils.Sequence):
             input_dtype=input_dtype,
             target_dtype=target_dtype,
             augment=augment,
+            read_from_gcs=read_from_gcs,
             **handler_kwargs)
 
 
@@ -282,9 +287,10 @@ class DFSequence(tf.keras.utils.Sequence):
 
     
     def _localize_path(self,path):
+        path=re.sub(REMOTE_HEAD,'',path)
         if isinstance(self.localize,str):
-            path=re.sub(REMOTE_HEAD,'',path)
-            path=re.sub(f'^{self.localize}/','',path)
+            path=path.split(self.localize,1)[-1]
+        path=re.sub(r'^\/','',path)
         if self.local_data_root:
             path=f'{self.local_data_root}/{path}'
         return path
