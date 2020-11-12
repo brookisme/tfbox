@@ -95,26 +95,32 @@ def build_block(config,btype=None,index=None):
 def build_blocks(config,indexed=True,singles_as_block=False):
     block_stack=[]
     config=_config_dict(config)
-    layers=config.pop('layers',[{}])
-    nb_repeats=config.pop('nb_repeats',1)
-    as_block=singles_as_block and (nb_repeats==1) and (layers==[{}])
-    for i in range(nb_repeats):
-        for j,c in enumerate(layers):
-            if indexed and (not as_block):
-                index=f'{i}-{j}'
-            else:
-                index=None
-            cfg=config.copy()
-            cfg.update(_config_dict(c))
-            block_stack.append(
-                build_block(cfg,index=index))
+    layers=config.pop('layers',False)
+    nb_repeats=config.pop('nb_repeats',False)
+    if layers or nb_repeats:
+        as_block=False
+        layers=layers or [{}]
+        nb_repeats=nb_repeats or 1
+        for i in range(nb_repeats):
+            for j,c in enumerate(layers):
+                if indexed and (not as_block):
+                    index=f'{i}-{j}'
+                else:
+                    index=None
+                cfg=config.copy()
+                cfg.update(_config_dict(c,cfg.get('btype')))
+                block_stack.append(
+                    build_block(cfg,index=index))
+    else:
+        as_block=singles_as_block
+        block_stack.append(build_block(config))
     if as_block:
         return block_stack[0]
     else:
         return block_stack
 
 
-def _config_dict(config):
+def _config_dict(config,btype=None):
     if not config:
         config={}
     elif isinstance(config,str):
@@ -123,18 +129,18 @@ def _config_dict(config):
         }
     elif isinstance(config,int):
         config={
-            'btype': INT_BTYPE,
+            'btype': btype or INT_BTYPE,
             'filters': config,
         }
     else:
         nb_keys=len(config)
         if nb_keys==1:
             key, value=next(iter(config.items()))
-            if key in BLOCKS:
+            if str(key) in BLOCKS:
                 btype=key
                 config=value
             else:
-                btype=DEFAULT_BTYPE
+                btype= config.get('btype',btype) or DEFAULT_BTYPE
             config['btype']=btype
     return config.copy()
 
@@ -738,10 +744,11 @@ class ASPP(Group):
     # PUBLIC
     #
     def __init__(self,
-            cfig_key_path='aspp',
-            cfig='blocks',
+            config='aspp',
+            file_name='blocks',
+            folder=load.TFBOX,
             **kwargs):
-        config=load.config(cfig=cfig,key_path=cfig_key_path)
+        config=load.config(config=config,file_name=file_name,folder=folder)
         config.update(kwargs)
         super(ASPP, self).__init__(**config)
 
