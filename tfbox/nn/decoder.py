@@ -46,7 +46,7 @@ class Decoder(base.Model):
             folder=load.TFBOX,
             nb_classes=None,
             from_logits=None,
-            add_classifier=False,
+            add_classifier=None,
             name=NAME,
             named_layers=True,
             noisy=True):
@@ -58,6 +58,8 @@ class Decoder(base.Model):
             config,
             file_name or Decoder.NAME,
             folder)
+        if add_classifier is None:
+            add_classifier=config.get('classifier',False)
         # parse config
         self._output_size=self.config.get('output_size')
         self._output_ratio=self.config.get('output_ratio',1)

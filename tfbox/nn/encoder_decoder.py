@@ -28,6 +28,8 @@ class EncoderDecoder(base.Model):
             config,
             file_name or EncoderDecoder.NAME,
             folder)
+        if add_classifier is None:
+            add_classifier=config.get('classifier',False)
         # encoder
         encoder_config=self.config['encoder']
         encoder_config=load.config(

@@ -26,7 +26,7 @@ class Encoder(base.Model):
             folder=load.TFBOX,
             nb_classes=None,
             from_logits=None,
-            add_classifier=False,
+            add_classifier=None,
             return_empty_skips=False,
             name=NAME,
             named_layers=True,
@@ -39,6 +39,8 @@ class Encoder(base.Model):
             config,
             file_name or Encoder.NAME,
             folder)
+        if add_classifier is None:
+            add_classifier=config.get('classifier',False)
         blocks_config=config['blocks_config']
         self.stacked_blocks=[blocks.build_blocks(c) for c in blocks_config]
         self.return_empty_skips=return_empty_skips
