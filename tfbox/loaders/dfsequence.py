@@ -15,7 +15,7 @@ LOCAL_DATA_ROOT=False
 REMOTE_HEAD=r'^(gs|http|https)://'
 INPUT_COL='input'
 TARGET_COL='target'
-WINDOW_INDEX_COL='window_index'
+WINDOW_INDEX_COL=None
 WINDOW_COL='window'
 WINDOWED_GROUP_COL='__win_group_id'
 INPUT_DTYPE=np.float32
@@ -41,7 +41,7 @@ class DFSequence(tf.keras.utils.Sequence):
             input_column=INPUT_COL,
             target_column=TARGET_COL,
             target_resolution=None,
-            group_column=GROUP_COL,
+            group_column=None,
             has_windows=False,
             window_index_column=WINDOW_INDEX_COL,
             window_column=WINDOW_COL,
@@ -225,13 +225,11 @@ class DFSequence(tf.keras.utils.Sequence):
         self.has_windows=has_windows
         self.window_index_column=window_index_column
         self.window_column=window_column
-        if not group_column:
-            group_column=target_column
-        if self.has_windows:
+        if self.has_windows and window_index_column:
             self.group_column=WINDOWED_GROUP_COL
             self.base_group_column=group_column
         else:
-            self.group_column=group_column
+            self.group_column=group_column or target_column
 
 
     def _init_dataset(self,data,converters,limit):
@@ -246,7 +244,7 @@ class DFSequence(tf.keras.utils.Sequence):
             data=pd.concat(data)
         else:
             data=data.copy()
-        if self.has_windows:
+        if self.has_windows and self.window_index_column:
             data.loc[:,self.group_column]=data.apply(self._window_group,axis=1)
         if self.localize:
             data.loc[:,self.input_column]=data[self.input_column].apply(self._localize_path)
