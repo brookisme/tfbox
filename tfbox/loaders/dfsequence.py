@@ -225,11 +225,12 @@ class DFSequence(tf.keras.utils.Sequence):
         self.has_windows=has_windows
         self.window_index_column=window_index_column
         self.window_column=window_column
+        group_column=group_column or target_column
         if self.has_windows and window_index_column:
             self.group_column=WINDOWED_GROUP_COL
             self.base_group_column=group_column
         else:
-            self.group_column=group_column or target_column
+            self.group_column=group_column
 
 
     def _init_dataset(self,data,converters,limit):
