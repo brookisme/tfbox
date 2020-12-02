@@ -59,7 +59,7 @@ class Decoder(base.Model):
             file_name or Decoder.NAME,
             folder)
         if add_classifier is None:
-            add_classifier=config.get('classifier',False)
+            add_classifier=self.config.get('classifier',False)
         # parse config
         self._output_size=self.config.get('output_size')
         self._output_ratio=self.config.get('output_ratio',1)
@@ -92,7 +92,7 @@ class Decoder(base.Model):
         if add_classifier and nb_classes:
             self.set_classifier(
                 nb_classes,
-                config.get('classifier'),
+                self.config.get('classifier'),
                 folder=folder,
                 from_logits=from_logits)
 

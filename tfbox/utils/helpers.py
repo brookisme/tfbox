@@ -136,7 +136,7 @@ class StrideManager(object):
 #
 # FINE TUNING
 #
-def swap_top(model,top,inputs=None,inputs_shape=None,swap_index=-2):
+def swap_top(model,top,inputs=None,inputs_shape=None,swap_index=-2,noisy=True):
     if inputs is None:
         if inputs_shape is None:
             inputs=model.inputs
@@ -144,6 +144,8 @@ def swap_top(model,top,inputs=None,inputs_shape=None,swap_index=-2):
             inputs=keras.Input(shape=inputs_shape)
     model.trainable=False
     if swap_index:
+        if noisy:
+            print('SWAP TOP AFTER:',model.layers[swap_index].name)
         model=keras.Model(model.inputs, model.layers[swap_index].output)
     return keras.Model(inputs,top(model(inputs,training=False)))
 
