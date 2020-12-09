@@ -27,10 +27,17 @@ UPSAMPLE_ERROR=(
 # HELPERS
 #
 def get(key,activation=False):
+    key=h.snake(key)
     if activation:
-        return ACTIVATIONS[h.snake(key)]
+        act=ACTIVATIONS.get(key)
+        if not act:
+            act=getattr(activations,h.camel(key))
+        return act
     else:
-        return BLOCKS[h.snake(key)]
+        blk=BLOCKS.get(key)
+        if not blk:
+            blk=getattr(layers,h.camel(key))
+        return blk
 
 
 def layer_name(*name_path,index=None,named=True):
@@ -136,13 +143,29 @@ def _config_dict(config,btype=None):
         nb_keys=len(config)
         if nb_keys==1:
             key, value=next(iter(config.items()))
-            if str(key) in BLOCKS:
+            if _valid_key(key):
                 btype=key
                 config=value
             else:
                 btype= config.get('btype',btype) or DEFAULT_BTYPE
             config['btype']=btype
     return config.copy()
+
+
+def _valid_key(key):
+    key=h.snake(key)
+    if key in list(BLOCKS.keys())+list(ACTIVATIONS.keys()):
+        return True
+    else:
+        try:
+            getattr(layers,h.camel(key))
+            return True
+        except:
+            try:
+                getattr(activations,h.camel(key))
+                return True
+            except:
+                return False
 
 
 #
