@@ -166,7 +166,7 @@ class ScoreKeeper(object):
 
 
     def _importance(self,targ,randomized_pred,base_score):
-        return ((base_score-self.metric(targ,randomized_pred).numpy())/base_score+EPS)
+        return ((base_score-self.metric(targ,randomized_pred).numpy())/(base_score+EPS))
 
 
     def _flatten(self,ll):
