@@ -7,7 +7,12 @@ from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import clip_ops
 from tensorflow.python.framework import constant_op
 EPS=1e-8
-
+CCE_ARGS=[
+    'from_logits',
+    'label_smoothing',
+    'reduction',
+    'name'
+]
 #
 # CUSTOM LOSS FUNCTIIONS
 #
@@ -18,6 +23,7 @@ def weighted_categorical_crossentropy(weights=None,**kwargs):
         Returns:
             * weighted categorical crossentropy function
     """
+    kwargs={ k: kwargs[k] for k in kwargs.keys() if k in CCE_ARGS }
     if weights is None:
         print('WARNING: WCCE called without weights. Defaulting to CCE')
         return losses.CategoricalCrossentropy(**kwargs)
@@ -36,9 +42,21 @@ def weighted_categorical_crossentropy(weights=None,**kwargs):
 
 
 
-def focal_cross_entropy(gamma=2,alpha=0.25,from_logits_method='softmax',**kwargs):
+def focal_cross_entropy(
+        gamma=2,
+        alpha=0.25,
+        from_logits_method='softmax',
+        weights=None,
+        ignore_labels=None,
+        nb_classes=None,
+        **kwargs):
     """ generalized focal loss that defaults to "softmax-focal-loss"
     """
+    if (not weights) and ignore_labels:
+        weights=[1]*nb_classes
+        for l in ignore_labels:
+            weights[l]=0
+    print('FOCAL LOSS',gamma,alpha,weights)
     def _loss(target,output):
         return focalized_categorical_crossentropy(
             target,
@@ -46,7 +64,7 @@ def focal_cross_entropy(gamma=2,alpha=0.25,from_logits_method='softmax',**kwargs
             alpha=alpha,
             gamma=gamma,
             from_logits_method=from_logits_method,
-            **kwargs)
+            weights=weights)
     return _loss
 
 
@@ -88,7 +106,7 @@ def focalized_categorical_crossentropy(
         gamma=2,
         from_logits=False,
         from_logits_method='sigmoid',
-        **kwargs):
+        weights=None):
     """ focal version of """
     if from_logits:
         if from_logits_method=='sigmoid':
@@ -107,6 +125,8 @@ def focalized_categorical_crossentropy(
         gamma=tf.convert_to_tensor(gamma, dtype=K.floatx())
         modulating_factor=tf.pow((1.0 - p_t), gamma)
     focal_weights=alpha_factor*modulating_factor
+    if weights:
+        focal_weights=weights*focal_weights
     return pixel_weighted_categorical_crossentropy(focal_weights,target,output,from_logits=from_logits)
 
 

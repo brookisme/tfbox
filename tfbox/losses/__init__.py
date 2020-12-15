@@ -24,9 +24,10 @@ def get(loss_func=None,weights=None,**kwargs):
     if not loss_func:
         if weights:
             loss_func=DEFAULT_WEIGHTED_LOSS
-            kwargs['weights']=weights
         else:
             loss_func=DEFAULT_LOSS
+    if weights:
+        kwargs['weights']=weights
     if isinstance(loss_func,str):
         loss_func=LOSS_FUNCTIONS.get(loss_func,loss_func)
     if not isinstance(loss_func,str):
