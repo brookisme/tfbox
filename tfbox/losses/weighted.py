@@ -45,6 +45,7 @@ def weighted_categorical_crossentropy(weights=None,**kwargs):
 def focal_cross_entropy(
         gamma=2,
         alpha=0.25,
+        from_logits=False,
         from_logits_method='softmax',
         weights=None,
         ignore_labels=None,
@@ -63,6 +64,7 @@ def focal_cross_entropy(
             output,
             alpha=alpha,
             gamma=gamma,
+            from_logits=from_logits,
             from_logits_method=from_logits_method,
             weights=weights)
     return _loss
@@ -115,6 +117,8 @@ def focalized_categorical_crossentropy(
             prob=tf.nn.softmax(output)
         else:
             prob=from_logits_method(output)
+    else:
+        prob=output
     p_t = (target * prob)+((1 - target)*(1 - prob))
     alpha_factor = 1.0
     modulating_factor = 1.0
