@@ -224,12 +224,13 @@ class Conv(keras.Model):
 
     def __call__(self,x,training=False):
         x=self.conv(x)
-        if self.bn: x=self.bn(x)
         if self.act_last:
+            if self.bn: x=self.bn(x)
             if training and self.do: x=self.do(x)
             if self.act: x=self.act(x)
         else:
             if self.act: x=self.act(x)
+            if self.bn: x=self.bn(x)
             if training and self.do: x=self.do(x)         
         return x
 
@@ -681,8 +682,8 @@ class SqueezeExcitation(keras.Model):
 
     def __call__(self,x,training=False):
         y=self.gp(x)
-        y=self.reduce(x)
-        y=self.expand(x)
+        y=self.reduce(y)
+        y=self.expand(y)
         return layers.multiply([x,y])
 
 
