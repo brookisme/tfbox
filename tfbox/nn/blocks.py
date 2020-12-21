@@ -797,7 +797,7 @@ class SegmentClassifier(keras.Model):
             filters_list=None,
             kernel_size=3,
             kernel_size_list=None,
-            output_batch_norm=True,
+            output_batch_norm=False,
             output_act=True,
             output_act_config={},
             seperable_preclassification=False,
