@@ -70,6 +70,41 @@ def focal_cross_entropy(
     return _loss
 
 
+def masked_binary_cross_entropy(
+        mask_index=0,
+        category_index=None,
+        pos_weight=None,
+        **kwargs):
+    """ 
+    """
+    if category_index:
+        if (mask_index!=0) and (mask_index!=-1):
+            raise ValueError('if category_index index is None, mask_index must be 0 or -1') 
+    if pos_weight is None:
+        print('MASKED BCE',mask_index,category_index,kwargs)
+        bce=losses.BinaryCrossentropy(**kwargs)
+    else:
+        if not kwargs.get('from_logits'):
+            raise ValueError('logits required with pos_weight')
+        def bce(target,output):
+            print('MASKED WCCE',pos_weight)
+            return tf.nn.weighted_cross_entropy_with_logits(
+                target, 
+                output, 
+                pos_weight, 
+                name=kwargs.get('name','masked_binary_cross_entropy'))
+    def _loss(target,output):
+        msk=target[:,:,:,mask_index]!=1
+        if category_index:
+            target=target[:,:,:,category_index]
+        elif mask_index==-1:
+            target=target[:,:,:,:-1]
+        else:
+            target=target[:,:,:,1:]
+        target=tf.boolean_mask(target,msk)
+        output=tf.boolean_mask(output,msk)
+        return bce(target,output)
+    return _loss
 
 
 

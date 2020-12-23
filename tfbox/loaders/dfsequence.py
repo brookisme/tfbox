@@ -46,6 +46,7 @@ class DFSequence(tf.keras.utils.Sequence):
             window_index_column=WINDOW_INDEX_COL,
             window_column=WINDOW_COL,
             onehot=True,
+            droplast=False,
             cropping=None,
             stop_floating=False,
             float_cropping=None,
@@ -55,6 +56,7 @@ class DFSequence(tf.keras.utils.Sequence):
             target_dtype=TARGET_DTYPE,
             **handler_kwargs):
         self.onehot=onehot
+        self.droplast=droplast
         if nb_classes or (not onehot):
             self.nb_classes=nb_classes
         else:
@@ -130,6 +132,8 @@ class DFSequence(tf.keras.utils.Sequence):
         targ=self.get_target()
         if self.onehot:
             targ=to_categorical(targ,num_classes=self.nb_classes)
+            if self.droplast:
+                targ=targ[:,:,:-1]
         return inpt, targ
 
 
@@ -156,6 +160,8 @@ class DFSequence(tf.keras.utils.Sequence):
         targs=np.array(targs)
         if self.onehot:
             targs=to_categorical(targs,num_classes=self.nb_classes)
+            if self.droplast:
+                targs=targs[:,:,:,:-1]
         return inpts, targs
 
     

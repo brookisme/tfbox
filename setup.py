@@ -19,7 +19,7 @@ setup(
     'tfbox.nn': 'tfbox/nn',
     'tfbox.utils': 'tfbox/utils'
   },
-  version = '0.0.0.47',
+  version = '0.0.0.48',
   description = 'tfbox: a collection of models and tools for tensorflow',
   author = 'Brookie Guzder-Williams',
   author_email = 'brook.williams@gmail.com',

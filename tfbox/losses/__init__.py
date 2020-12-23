@@ -1,5 +1,5 @@
 import tensorflow.keras.losses as losses
-from .weighted import weighted_categorical_crossentropy, focal_cross_entropy
+from .weighted import weighted_categorical_crossentropy, focal_cross_entropy, masked_binary_cross_entropy
 #
 # CONSTANTS
 #
@@ -12,6 +12,7 @@ DEFAULT_WEIGHTED_LOSS='weighted_categorical_crossentropy'
 #
 LOSS_FUNCTIONS={
     'focal_cross_entropy': focal_cross_entropy,
+    'masked_binary_cross_entropy': masked_binary_cross_entropy,
     'weighted_categorical_crossentropy': weighted_categorical_crossentropy,
     'categorical_crossentropy': losses.CategoricalCrossentropy
 }
