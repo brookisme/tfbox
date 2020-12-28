@@ -193,17 +193,55 @@ class ScoreBoard(object):
     GROUP_KEY='data_split'
     ALL='all'
     GROUPS=[ALL,'train','valid','test']
+    STAT_COLS=[
+        'tp',
+        'fp',
+        'tn',
+        'fn',
+        'precision',
+        'recall',
+        'false_positive_rate']
+
 
     #
     # STATIC
     #
-    def precision_recall(tp,fx):
-        return tp/(tp+fx+EPS)
+    def precision_recall(a,b):
+        try:
+            return a/(a+b)
+        except:
+            return 1
 
 
     def fbeta(p,r,beta=2):
         return ((1+(beta**2))*p*r)/(((beta**2)*p)+r+EPS)
 
+
+    @staticmethod
+    def cdf_curve(
+            df,
+            n=1000,
+            x_col='false_positive_rate',
+            y_col='recall',
+            parameterizer=None,
+            gte=False,
+            return_area=True):
+        df=df.sort_values(by=[x_col])
+        thresholds = np.linspace(0, 1.0, n)
+        x_sum=df[x_col].sum()
+        y_sum=df[y_col].sum()
+        xys=[ ScoreBoard._cummulator(
+                df,t,x_sum,y_sum,
+                x_col=x_col,
+                y_col=y_col,
+                parameterizer=parameterizer,
+                gte=gte) 
+              for t in thresholds ]
+        xs,ys=zip(*xys)
+        if return_area:
+            return xs,ys,np.array(ys).sum()/n
+        else:
+            return xs,ys
 
     #
     # PUBLIC
@@ -248,6 +286,30 @@ class ScoreBoard(object):
         return self._display_return(_df,display,return_data)
 
 
+    def category_stats(self,cat,categories=None,fbetas=None,stat_cols_only=True):
+        df=self.report.copy()
+        categories=categories or self.categories
+        fbetas=fbetas or self.fbetas     
+        not_cats=[c for c in categories if c!=cat]
+        df.loc[:,'tp']=df[f'{cat}-{cat}']
+        fpcols=[f'{c}-{cat}' for c in not_cats]    
+        df['fp']=df[[f'{c}-{cat}' for c in not_cats]].sum(axis=1)
+        df['tn']=df[[f'{c}-{c2}' for c in not_cats for c2 in not_cats]].sum(axis=1)
+        df['fn']=df[[f'{cat}-{c}' for c in not_cats]].sum(axis=1)
+        df['precision']=df.apply(lambda r: ScoreBoard.precision_recall(r.tp,r.fp),axis=1)
+        df['recall']=df.apply(lambda r: ScoreBoard.precision_recall(r.tp,r.fn),axis=1)
+        df['false_positive_rate']=df.apply(lambda r: ScoreBoard.precision_recall(r.fp,r.tn),axis=1)
+        stat_cols=ScoreBoard.STAT_COLS.copy()
+        for b in fbetas:
+            bkey=re.sub("\.","",str(b))
+            fbcol=f'f_{bkey}'
+            stat_cols.append(fbcol)
+            df[fbcol]=df.apply(lambda r: ScoreBoard.fbeta(r.precision,r.recall,beta=b),axis=1)
+        if stat_cols_only:
+            df=df[stat_cols]
+        return df
+
+
     def stats(self,cm,cat,categories=None,fbetas=None):
         categories=categories or self.categories
         fbetas=fbetas or self.fbetas     
@@ -258,10 +320,12 @@ class ScoreBoard(object):
         fn=cm[[f'{cat}-{c}' for c in not_cats]].sum()
         p=ScoreBoard.precision_recall(tp,fp)
         r=ScoreBoard.precision_recall(tp,fn)
+        fpr=ScoreBoard.precision_recall(fp,tn)
         _stats={
             'lulc':cat,
             'precision': p,
             'recall': r,
+            'false_positive_rate': fpr,
             'tp':tp,
             'fp':fp,
             'fn':fn,
@@ -347,4 +411,23 @@ class ScoreBoard(object):
             self.nb_display(out)
         if return_data or (not display):
             return out
+
+
+    @staticmethod
+    def _cummulator(
+            df,
+            t,
+            x_sum,
+            y_sum,
+            x_col='fpr',
+            y_col='recall',
+            parameterizer=None,
+            gte=False):
+        if not parameterizer:
+            parameterizer=x_col
+        if gte:
+            rows=df[df[parameterizer]>=t]
+        else:
+            rows=df[df[parameterizer]<t]
+        return rows[x_col].sum()/x_sum, rows[y_col].sum()/y_sum
 
