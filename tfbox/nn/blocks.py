@@ -177,7 +177,7 @@ class Conv(keras.Model):
     """
     BATCH_NORM='batch'
     GROUP_NORM='group'
-
+    DEFAULT_NORM=BATCH_NORM
 
     #
     # PUBLIC
@@ -249,6 +249,8 @@ class Conv(keras.Model):
 
 
     def _norm(self,norm,norm_config):
+        if norm==True:
+            norm=Conv.DEFAULT_NORM
         if norm==Conv.BATCH_NORM:
             norm=layers.BatchNormalization(
                 name=self._layer_name('batch_norm'),
@@ -257,6 +259,8 @@ class Conv(keras.Model):
             norm=addons.GroupNormalization(
                 name=self._layer_name('group_norm'),
                 **norm_config)
+        elif norm:
+            raise ValueError('only `group` and `batch` norms implemented')
         else:
             norm=False
         return norm      
