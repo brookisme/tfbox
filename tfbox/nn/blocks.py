@@ -5,6 +5,7 @@ import tensorflow.keras as keras
 from tensorflow.keras import layers
 from tensorflow.keras import activations
 from . import load
+from . import addons
 import tfbox.utils.helpers as h
 #
 # CONSTANTS
@@ -57,37 +58,6 @@ def get_activation(act,**config):
             act=get(act,activation=True)
         act=act(**config)
     return act
-
-
-def swish(**kwargs):
-    def _act(x):
-        return tf.nn.swish(x)
-    name=kwargs.get('name','swish')
-    _act.name=name
-    return _act
-
-
-# def group_norm(x, scope, G=8, esp = 1e-5):
-#     with tf.variable_scope(f'{scope}_norm'):
-#         # normalize
-#         # transpose: [bs, h, w, c] to [bs, c, h, w] following the paper
-#         x = tf.transpose(x, [0, 3, 1, 2])
-#         N, C, H, W = x.get_shape().as_list()
-#         G = min(G, C)
-#         x = tf.reshape(x, [-1, G, C // G, H, W])
-#         mean, var = tf.nn.moments(x, [2, 3, 4], keep_dims=True)
-#         x = (x - mean) / tf.sqrt(var + esp)
-#         # per channel gamma and beta
-#         zeros = lambda: tf.zeros([C], dtype=tf.float32)
-#         ones = lambda: tf.ones([C], dtype=tf.float32)
-#         gamma = tf.Variable(initial_value = ones, dtype=tf.float32, name=f'gamma_{scope}')
-#         beta = tf.Variable(initial_value = zeros, dtype=tf.float32, name=f'beta_{scope}')
-#         gamma = tf.reshape(gamma, [1, C, 1, 1])
-#         beta = tf.reshape(beta, [1, C, 1, 1])
-#         output = tf.reshape(x, [-1, C, H, W]) * gamma + beta
-#         # tranpose: [bs, c, h, w, c] to [bs, h, w, c] following the paper
-#         output = tf.transpose(output, [0, 2, 3, 1])
-#     return output
 
 
 def upsample(
@@ -203,8 +173,12 @@ def _valid_key(key):
 # GENERAL BLOCKS 
 #
 class Conv(keras.Model):
-    """ Conv-BatchNorm-Activation-Dropout
+    """ Conv-Norm-Activation-Dropout
     """
+    BATCH_NORM='batch'
+    GROUP_NORM='group'
+
+
     #
     # PUBLIC
     #
@@ -213,7 +187,8 @@ class Conv(keras.Model):
             kernel_size=3,
             padding='same',
             seperable=False,
-            batch_norm=True,
+            norm=BATCH_NORM,
+            norm_config={},
             act=True,
             act_config={},
             dilation_rate=1,
@@ -246,7 +221,7 @@ class Conv(keras.Model):
             strides=strides,
             name=self._layer_name(cname),
             **conv_config)
-        self.bn=self._batch_norm(batch_norm)
+        self.norm=self._norm(norm,norm_config)
         self.act=self._activation(act,act_config)
         self.do=self._dropout(dropout,dropout_config)
         self.act_last=act_last
@@ -256,12 +231,12 @@ class Conv(keras.Model):
     def __call__(self,x,training=False):
         x=self.conv(x)
         if self.act_last:
-            if self.bn: x=self.bn(x)
+            if self.norm: x=self.norm(x)
             if training and self.do: x=self.do(x)
             if self.act: x=self.act(x)
         else:
             if self.act: x=self.act(x)
-            if self.bn: x=self.bn(x)
+            if self.norm: x=self.norm(x)
             if training and self.do: x=self.do(x)         
         return x
 
@@ -273,10 +248,18 @@ class Conv(keras.Model):
         return layer_name(self.block_name,name,named=self.named_layers)
 
 
-    def _batch_norm(self,batch_norm):
-        if batch_norm:
-            bn=layers.BatchNormalization(name=self._layer_name('batch_norm'))
-            return bn      
+    def _norm(self,norm,norm_config):
+        if norm==Conv.BATCH_NORM:
+            norm=layers.BatchNormalization(
+                name=self._layer_name('batch_norm'),
+                **norm_config)
+        elif norm==Conv.GROUP_NORM:
+            norm=addons.GroupNormalization(
+                name=self._layer_name('group_norm'),
+                **norm_config)
+        else:
+            norm=False
+        return norm      
 
 
     def _activation(self,act,config):
@@ -322,7 +305,8 @@ class Stack(keras.Model):
             residual_act=True,
             seperable_residual=False,
             seperable=False,
-            batch_norm=True,
+            norm=True,
+            norm_config={},
             act=True,
             act_config={},
             input_dilation_rate=1,
@@ -360,7 +344,8 @@ class Stack(keras.Model):
             max_pooling,
             seperable=seperable,
             seperable_residual=seperable_residual,
-            batch_norm=batch_norm,
+            norm=norm,
+            norm_config=norm_config,
             padding=padding,
             act_config=act_config,
             **conv_config)
@@ -533,7 +518,6 @@ class Group(keras.Model):
             residual=True,
             residual_act=True,
             seperable=False,
-            batch_norm=True,
             act=True,
             act_config={},
             act_last=False,
@@ -829,7 +813,8 @@ class SegmentClassifier(keras.Model):
             filters_list=None,
             kernel_size=3,
             kernel_size_list=None,
-            output_batch_norm=True,
+            output_norm=True,
+            output_norm_config={},
             output_act=True,
             output_act_config={},
             seperable_preclassification=False,
@@ -864,7 +849,8 @@ class SegmentClassifier(keras.Model):
             self.classifier=Conv(
                     filters=filters_list[-1],
                     kernel_size=kernel_size_list[-1],
-                    batch_norm=output_batch_norm,
+                    norm=output_norm,
+                    norm_config=output_norm_config,
                     act=False,
                     name=self.block_name,
                     named_layers=self.named_layers)
@@ -942,7 +928,7 @@ BLOCKS={
 ACTIVATIONS={
     'relu': layers.ReLU,
     'sigmoid': activations.sigmoid,
-    'swish': swish,
+    'swish': addons.Swish,
     'softmax': layers.Softmax
 }
 STACK_BTYPE='stack'
