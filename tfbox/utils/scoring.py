@@ -207,9 +207,12 @@ class ScoreBoard(object):
     # STATIC
     #
     def precision_recall(a,b):
-        try:
-            return a/(a+b)
-        except:
+        denom=(a+b)
+        if denom
+            return a/denom
+        elif a:
+            return None
+        else:
             return 1
 
 
@@ -254,9 +257,11 @@ class ScoreBoard(object):
             group_key=GROUP_KEY,
             accuracy_key='acc',
             nb_display=print,
-            drop_na=True):
+            drop_na=False):
         if isinstance(report,str):
             report=pd.read_csv(report)
+        else:
+            report=report.copy()
         if drop_na:
             report.dropna(inplace=True)
         self.report=report
