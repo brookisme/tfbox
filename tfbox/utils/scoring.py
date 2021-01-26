@@ -208,7 +208,7 @@ class ScoreBoard(object):
     #
     def precision_recall(a,b):
         denom=(a+b)
-        if denom
+        if denom:
             return a/denom
         elif a:
             return None
