@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tfbox.metrics as metrics
+import imagebox.processor as proc
 
 EPS=1e-8
 
@@ -21,6 +22,7 @@ class ScoreKeeper(object):
                  loader,
                  classes,
                  nb_classes=None,
+                 output_value_map=False,
                  metric=STRICT_ACCURACY,
                  ignore_label=None,
                  row_keys=[],
@@ -30,6 +32,7 @@ class ScoreKeeper(object):
         self.model=model
         self.loader=loader
         self.classes=classes
+        self.output_value_map=output_value_map
         self.max_class_value=max(classes.keys())
         self.nb_classes=nb_classes or len(classes)
         self.row_keys=row_keys or []
@@ -82,6 +85,8 @@ class ScoreKeeper(object):
         importances=[]
         targs=tf.argmax(targs,axis=-1)
         preds=tf.argmax(self.model(inpts),axis=-1)
+        if self.output_value_map:
+            preds=proc.map_values(preds,self.output_value_map)
         for i,(targ,pred,row) in enumerate(zip(targs,preds,rows)):
             score_data={}
             score_data['batch']=batch
