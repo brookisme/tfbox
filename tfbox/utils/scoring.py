@@ -148,7 +148,11 @@ class ScoreKeeper(object):
                 valid=1
                 total=tf.cast(tf.math.reduce_prod(y_true.shape),tf.float32)
             else:
-                valid=tf.cast(y_true!=ignore_label,tf.float32)
+                if isinstance(ignore_label,(int,float,np.float32)):
+                    ignores=[ignore_label]
+                else:
+                    ignores=ignore_label
+                valid=tf.cast(~np.isin(y_true,ignores),tf.float32)
                 total=tf.reduce_sum(valid)
             valid_true=valid*tf.cast((y_true==y_pred),tf.float32)
             return tf.reduce_sum(valid_true)/total
@@ -210,8 +214,6 @@ class ScoreBoard(object):
         denom=(a+b)
         if denom:
             return a/denom
-        elif a:
-            return None
         else:
             return 1
 
