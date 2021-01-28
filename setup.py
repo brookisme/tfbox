@@ -39,6 +39,7 @@ setup(
     'numpy',
     'pandas',
     'pyyaml',
+    'matplotlib',
     'tensorflow>=2.1',
     'imagebox>=0.0.0.16'
   ],
