@@ -19,7 +19,7 @@ setup(
     'tfbox.nn': 'tfbox/nn',
     'tfbox.utils': 'tfbox/utils'
   },
-  version = '0.0.0.57',
+  version = '0.0.0.58',
   description = 'tfbox: a collection of models and tools for tensorflow',
   author = 'Brookie Guzder-Williams',
   author_email = 'brook.williams@gmail.com',
@@ -40,7 +40,6 @@ setup(
     'pandas',
     'pyyaml',
     'matplotlib',
-    'tensorflow>=2.1',
     'imagebox>=0.0.0.16'
   ],
   classifiers = [],
