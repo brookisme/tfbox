@@ -22,6 +22,7 @@ class ScoreKeeper(object):
                  loader,
                  classes,
                  nb_classes=None,
+                 output_reducer_map=False,
                  output_value_map=False,
                  metric=STRICT_ACCURACY,
                  ignore_label=None,
@@ -33,6 +34,7 @@ class ScoreKeeper(object):
         self.loader=loader
         self.classes=classes
         self.output_value_map=output_value_map
+        self.output_reducer_map=output_reducer_map
         self.max_class_value=max(classes.keys())
         self.nb_classes=nb_classes or len(classes)
         self.row_keys=row_keys or []
@@ -84,7 +86,12 @@ class ScoreKeeper(object):
         scores=[]
         importances=[]
         targs=tf.argmax(targs,axis=-1)
-        preds=tf.argmax(self.model(inpts),axis=-1)
+        preds=self.model(inpts)
+        if self.output_reducer_map:
+            preds=tf.stack([
+                self._get_sum_stack(preds,v) for v 
+                in self.output_reducer_map],axis=-1)
+        preds=tf.argmax(preds,axis=-1)
         if self.output_value_map:
             preds=proc.map_values(preds,self.output_value_map)
         for i,(targ,pred,row) in enumerate(zip(targs,preds,rows)):
@@ -130,6 +137,16 @@ class ScoreKeeper(object):
     #
     # INTERNAL
     #
+    def _get_sum_stack(self,tnsr,vals):
+        if isinstance(vals,int):
+            out=tnsr[:,:,:,vals]
+        else:
+            out=tf.math.reduce_sum(
+                tf.stack([tnsr[:,:,:,v] for v in vals],axis=-1),
+                axis=-1)
+        return out
+
+
     def _set_metric(self,metric,ignore_label):
         if metric and metric!=ScoreKeeper.STRICT_ACCURACY:
             if isinstance(metric,str):
