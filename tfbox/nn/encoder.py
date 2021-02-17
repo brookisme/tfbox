@@ -25,6 +25,7 @@ class Encoder(base.Model):
             file_name=None,
             folder=load.TFBOX,
             nb_classes=None,
+            group_maps=None,
             from_logits=None,
             add_classifier=None,
             return_empty_skips=False,
@@ -45,9 +46,19 @@ class Encoder(base.Model):
         self.stacked_blocks=[blocks.build_blocks(c) for c in blocks_config]
         self.return_empty_skips=return_empty_skips
         if add_classifier and nb_classes:
+            GMAPS=[
+                1,1,
+                {
+                    'indices': [2,3,4,5],
+                    'method': 'add' # avg, conv_config, int
+                },
+                0
+            ]
+            print("FAKE GMAPS",GMAPS)
             self.set_classifier(
                 nb_classes,
                 config.get('classifier'),
+                group_maps=GMAPS,
                 folder=folder,
                 from_logits=from_logits)
 

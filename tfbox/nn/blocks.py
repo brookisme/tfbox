@@ -924,6 +924,7 @@ BLOCKS={
     'conv': Conv,
     'stack': Stack,
     'group': Group,
+    'groups': addons.Groups,
     'residual': Residual,
     'squeeze_excitation': SqueezeExcitation,
     'aspp': ASPP,
