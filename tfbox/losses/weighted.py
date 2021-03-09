@@ -6,6 +6,9 @@ from tensorflow.python.ops import nn
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import clip_ops
 from tensorflow.python.framework import constant_op
+#
+# CONSTANTS
+#
 EPS=1e-8
 CCE_ARGS=[
     'from_logits',
@@ -13,6 +16,10 @@ CCE_ARGS=[
     'reduction',
     'name'
 ]
+
+
+
+
 #
 # CUSTOM LOSS FUNCTIIONS
 #
