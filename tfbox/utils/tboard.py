@@ -51,7 +51,8 @@ class SegmentationImageWriter(object):
     def write_batch(self,batch_index,epoch=None,model=True):
         if model is True:
             model=self.model
-        inpts,targs=self.loader[batch_index]
+        data=self.loader[batch_index]
+        inpts,targs=data[0],data[1]
         if model:
             preds=tf.argmax(model(inpts),axis=-1).numpy()
             self._save_inputs_targets_predictions(
