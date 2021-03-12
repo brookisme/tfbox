@@ -78,7 +78,8 @@ class ScoreKeeper(object):
 
 
     def score_batch(self,batch,index=None):
-        inpts,targs=self.loader[batch]
+        data=self.loader[batch]
+        inpts,targs=data[0],data[1]
         if self.row_keys:
             rows=self.loader.batch_rows
         else:
