@@ -40,8 +40,8 @@ class DFSequence(tf.keras.utils.Sequence):
             read_from_gcs=False,
             input_column=INPUT_COL,
             target_column=TARGET_COL,
-            target_meta_column=None,
             target_resolution=None,
+            sample_weight_column=None,
             group_column=None,
             has_windows=False,
             window_index_column=WINDOW_INDEX_COL,
@@ -71,7 +71,7 @@ class DFSequence(tf.keras.utils.Sequence):
         self._set_columns(
             input_column,
             target_column,
-            target_meta_column,
+            sample_weight_column,
             group_column,
             has_windows,
             window_index_column,
@@ -136,8 +136,8 @@ class DFSequence(tf.keras.utils.Sequence):
             targ=to_categorical(targ,num_classes=self.nb_classes)
             if self.droplast:
                 targ=targ[:,:,:-1]
-        if self.target_meta_column:
-            return inpt, (targ,self.row[self.target_meta_column])
+        if self.sample_weight_column:
+            return inpt, targ, self.row[self.sample_weight_column]
         else:
             return inpt, targ
 
@@ -167,8 +167,9 @@ class DFSequence(tf.keras.utils.Sequence):
             targs=to_categorical(targs,num_classes=self.nb_classes)
             if self.droplast:
                 targs=targs[:,:,:,:-1]
-        if self.target_meta_column:
-            return inpts, (targs,[r[self.target_meta_column] for r in self.batch_rows])
+        if self.sample_weight_column:
+            sample_weights=np.array([r[self.sample_weight_column] for r in self.batch_rows])
+            return inpts, targs, sample_weights
         else:
             return inpts, targs
 
@@ -230,14 +231,14 @@ class DFSequence(tf.keras.utils.Sequence):
     def _set_columns(self,
             input_column,
             target_column,
-            target_meta_column,
+            sample_weight_column,
             group_column,
             has_windows,
             window_index_column,
             window_column):
         self.input_column=input_column
         self.target_column=target_column
-        self.target_meta_column=target_meta_column
+        self.sample_weight_column=sample_weight_column
         self.has_windows=has_windows
         self.window_index_column=window_index_column
         self.window_column=window_column
