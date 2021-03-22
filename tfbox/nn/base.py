@@ -75,7 +75,6 @@ class Model(keras.Model):
             gx=self.grouping(x)
             if self.group_classifier:
                 gx=self.group_classifier(gx)
-            print('BOOMS',(x,gx))
             return [x, gx]
         else:
             return x
