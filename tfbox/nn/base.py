@@ -45,7 +45,7 @@ class Model(keras.Model):
             nb_classes,
             config,
             group_maps=None,
-            # group_nb_classes=None,
+            group_nb_classes=None,
             file_name='classifier',
             folder=load.TFBOX,
             from_logits=None):
@@ -58,13 +58,12 @@ class Model(keras.Model):
                 from_logits=from_logits)
         if group_maps:
             self.grouping=addons.Groups(group_maps)
-            self.group_classifier=None
-            # self.group_classifier=self._get_classifier(
-            #     group_nb_classes,
-            #     config.get('group_classifier'),
-            #     file_name=file_name,
-            #     folder=folder,
-            #     from_logits=from_logits)
+            self.group_classifier=self._get_classifier(
+                group_nb_classes or len(group_maps),
+                config.get('group_classifier'),
+                file_name=file_name,
+                folder=folder,
+                from_logits=from_logits)
         else:
             self.grouping=False
 
@@ -95,27 +94,28 @@ class Model(keras.Model):
             file_name='classifier',
             folder=load.TFBOX,
             from_logits=None):
-        if from_logits in [True,False]:
-            config=self._update_activation(config,from_logits)
-        if nb_classes and config:
-            if config is True:
-                config={}
-            elif isinstance(config,str):
-                config={ 'classifier_type': config }
+        if config:
+            if from_logits in [True,False]:
+                config=self._update_activation(config,from_logits)
+            if nb_classes and config:
+                if config is True:
+                    config={}
+                elif isinstance(config,str):
+                    config={ 'classifier_type': config }
+                else:
+                    config=load.config(config,file_name,folder)
+                classifier_type=config.pop( 'classifier_type', self.DEFAULT_CLASSIFIER )
+                if classifier_type==Model.SEGMENT:
+                    classifier=blocks.SegmentClassifier(
+                        nb_classes=nb_classes,
+                        **config)
+                elif classifier_type==Model.GLOBAL_POOLING:
+                    raise NotImplementedError('TODO: GAPClassifier')
+                else:
+                    raise NotImplementedError(f'{classifier_type} is not a valid classifier')
             else:
-                config=load.config(config,file_name,folder)
-            classifier_type=config.pop( 'classifier_type', self.DEFAULT_CLASSIFIER )
-            if classifier_type==Model.SEGMENT:
-                classifier=blocks.SegmentClassifier(
-                    nb_classes=nb_classes,
-                    **config)
-            elif classifier_type==Model.GLOBAL_POOLING:
-                raise NotImplementedError('TODO: GAPClassifier')
-            else:
-                raise NotImplementedError(f'{classifier_type} is not a valid classifier')
-        else:
-            classifier=False
-        return classifier
+                classifier=False
+            return classifier
 
 
     def _update_activation(self,config,from_logits):

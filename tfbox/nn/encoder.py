@@ -59,6 +59,7 @@ class Encoder(base.Model):
                 nb_classes,
                 config.get('classifier'),
                 group_maps=GMAPS,
+                group_nb_classes=2,
                 folder=folder,
                 from_logits=from_logits)
 
