@@ -66,6 +66,7 @@ class Model(keras.Model):
                 from_logits=from_logits)
         else:
             self.grouping=False
+        print(self.grouping,'!!!!!!!!!!!!')
 
 
     def output(self,x):
@@ -77,6 +78,7 @@ class Model(keras.Model):
                 gx=self.group_classifier(gx)
             return [x, gx]
         else:
+            print('BOOMS')
             return x
 
 

@@ -171,7 +171,11 @@ class DFSequence(tf.keras.utils.Sequence):
             sample_weights=np.array([r[self.sample_weight_column] for r in self.batch_rows])
             return inpts, targs, sample_weights
         else:
-            return inpts, targs
+            # return inpts, targs
+            t1=targs[:,:,:,:4]
+            t2=targs
+            print('--->',t2.shape,t1.shape)
+            return inpts, [t2, t1]
 
     
     def get_input(self,row=None):

@@ -37,6 +37,10 @@ class Groups(tf.keras.layers.Layer):
         self.nb_groups=len(group_maps)
         
 
+    def get_config(self):
+        return {"group_maps": self.group_maps}
+
+
     def call(self, x):
         grouped_list=[self._group(i,m,x) for i,m in enumerate(self.group_maps)]
         return tf.concat(grouped_list,axis=-1)
