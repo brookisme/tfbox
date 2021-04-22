@@ -29,7 +29,8 @@ class ScoreKeeper(object):
                  row_keys=[],
                  band_names=[],
                  print_keys=[],
-                 band_importance=True):
+                 band_importance=False):
+        print('HACK-SKIP_BAND_IMPORTANCE',band_importance)
         self.model=model
         self.loader=loader
         self.classes=classes
@@ -85,16 +86,23 @@ class ScoreKeeper(object):
             rows=[False]*targs.shape[0]
         scores=[]
         importances=[]
-        targs=tf.argmax(targs,axis=-1)
+        if not isinstance(targs,list):
+            targs=[targs]
+        targs=[tf.argmax(t,axis=-1) for t in targs]
         preds=self.model(inpts)
         if self.output_reducer_map:
             preds=tf.stack([
                 self._get_sum_stack(preds,v) for v 
                 in self.output_reducer_map],axis=-1)
-        preds=tf.argmax(preds,axis=-1)
+        if not isinstance(targs,list):
+            preds=[preds]
+        preds=[tf.argmax(p,axis=-1) for p in preds]
         if self.output_value_map:
-            preds=proc.map_values(preds,self.output_value_map)
-        for i,(targ,pred,row) in enumerate(zip(targs,preds,rows)):
+            preds=[proc.map_values(p,self.output_value_map) for p in preds]
+        # for i,(targ,pred,row) in enumerate(zip(targs,preds,rows)):
+        if len(targs)>1:
+            print('SCORE FIRST HACK')
+        for i,(targ,pred,row) in enumerate(zip(targs[0],preds[0],rows)):
             score_data={}
             score_data['batch']=batch
             score_data['image_index']=i
@@ -105,7 +113,7 @@ class ScoreKeeper(object):
             score_data=self.confusion(targ,pred,data=score_data)
             scores.append(score_data)
             self._print_score(score_data,index)
-        if self.band_importance:
+        if False and self.band_importance:
             if not self.nb_bands:
                 self.nb_bands=inpts.shape[-1]
             for b in range(self.nb_bands):
