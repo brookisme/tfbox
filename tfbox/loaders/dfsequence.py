@@ -7,6 +7,8 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.utils import to_categorical
 from imagebox.handler import InputTargetHandler,BAND_ORDERING
+import tfbox.nn.addons as addons
+
 
 BATCH_SIZE=6
 GROUP_COL=None
@@ -51,6 +53,7 @@ class DFSequence(tf.keras.utils.Sequence):
             cropping=None,
             stop_floating=False,
             float_cropping=None,
+            group_maps=False,
             size=None,
             example_path=None,
             input_dtype=INPUT_DTYPE,
@@ -78,6 +81,10 @@ class DFSequence(tf.keras.utils.Sequence):
             window_column)
         self._set_local_data_root(local_data_root)
         self._init_dataset(data,converters,limit)
+        if group_maps:
+            self.grouping=addons.Groups(group_maps)
+        else:
+            self.grouping=False
         self.handler=InputTargetHandler(
             input_bands=input_bands,
             cropping=cropping,
@@ -132,10 +139,8 @@ class DFSequence(tf.keras.utils.Sequence):
             self.handler.set_augmentation()
         inpt=self.get_input()
         targ=self.get_target()
-        if self.onehot:
-            targ=to_categorical(targ,num_classes=self.nb_classes)
-            if self.droplast:
-                targ=targ[:,:,:-1]
+        # if self.onehot:
+        #     targ=self._onehot(targ)
         if self.sample_weight_column:
             return inpt, targ, self.row[self.sample_weight_column]
         else:
@@ -163,19 +168,13 @@ class DFSequence(tf.keras.utils.Sequence):
             targs.append(self.get_target(r))
         inpts=np.array(inpts)
         targs=np.array(targs)
-        if self.onehot:
-            targs=to_categorical(targs,num_classes=self.nb_classes)
-            if self.droplast:
-                targs=targs[:,:,:,:-1]
+        if self.grouping:
+            targs=[targs,self.grouping(targs)]
         if self.sample_weight_column:
             sample_weights=np.array([r[self.sample_weight_column] for r in self.batch_rows])
             return inpts, targs, sample_weights
         else:
-            # return inpts, targs
-            t1=targs[:,:,:,:4]
-            t2=targs
-            print('--->',t2.shape,t1.shape)
-            return inpts, [t2, t1]
+            return inpts, targs
 
     
     def get_input(self,row=None):
@@ -191,9 +190,14 @@ class DFSequence(tf.keras.utils.Sequence):
         """ return target image for row or selected-row """
         if row is None:
             row=self.row
-        return self.handler.target(
+        targ=self.handler.target(
             row[self.target_column],
             return_profile=False)
+        if self.onehot:
+            targ=self._onehot(targ)
+            # if self.grouping:
+            #     targ=[targ, self.grouping(targ)]
+        return targ
 
         
     def reset(self):
@@ -279,7 +283,22 @@ class DFSequence(tf.keras.utils.Sequence):
         self.nb_batches=int(len(self.idents)//self.batch_size)
         self.reset()
         
+
+    def _onehot(self,targ):
+        if isinstance(targ,list):
+            return [self._to_onehot(t) for t in targ]
+        else:
+            return self._to_onehot(targ)
+
+
+    def _to_onehot(self,targ):
+        targ=to_categorical(targ,num_classes=self.nb_classes)
+        ndim=targ.ndim
+        if self.droplast:
+            targ=targ[:,:,:-1]
+        return targ
     
+
     def _window_group(self,row):
         return f'{row[self.base_group_column]}__{row[self.window_index_column]}'
 
