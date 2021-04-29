@@ -3,12 +3,94 @@ import abc
 import warnings
 
 
+#
+# CONSTANTS
+#
+EPS=1e-8
+DEFAULT_CONV_CONFIG={
+    'kernel_size': 3,
+    'padding': 'same'
+}
+
+
+#
+# LAYERS
+#
 class Swish(tf.keras.layers.Layer):
+
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
 
     def call(self, inputs):
         return tf.nn.swish(inputs)
+
+
+
+
+class Groups(tf.keras.layers.Layer):
+    
+    
+    def __init__(self,group_maps):
+        super(Groups, self).__init__()
+        self.group_maps=group_maps
+        self.nb_groups=len(group_maps)
+        
+
+    def get_config(self):
+        return {"group_maps": self.group_maps}
+
+
+    def call(self, x):
+        grouped_list=[self._group(i,m,x) for i,m in enumerate(self.group_maps)]
+        return tf.concat(grouped_list,axis=-1)
+
+
+    def _group(self,index,gmap,x):
+        ndim=len(x.shape)
+        if ndim==4:
+            if gmap==0:
+                return tf.expand_dims(x[:,:,:,index]*EPS,axis=-1)
+            elif gmap==1:
+                return tf.expand_dims(x[:,:,:,index],axis=-1)
+            else:
+                indices=gmap.get('indices',[index])
+                method=gmap.get('method','add')
+                if method=='add':
+                    return tf.keras.layers.Add()([tf.expand_dims(x[:,:,:,i],axis=-1) for i in indices])
+                if method=='avg':
+                    return tf.keras.layers.Average()([tf.expand_dims(x[:,:,:,i],axis=-1) for i in indices])
+                else:
+                    conv_cfg=DEFAULT_CONV_CONFIG.copy()
+                    if isinstance(method,(int,float)):
+                        conv_cfg['filters']=method 
+                    else:
+                        conv_cfg.update(method)
+                    return tf.keras.layers.Conv2D(**conv_cfg)(tf.gather(x,indices,axis=-1))
+        elif ndim==3:
+            if gmap==0:
+                return tf.expand_dims(x[:,:,index]*EPS,axis=-1)
+            elif gmap==1:
+                return tf.expand_dims(x[:,:,index],axis=-1)
+            else:
+                indices=gmap.get('indices',[index])
+                method=gmap.get('method','add')
+                if method=='add':
+                    return tf.keras.layers.Add()([tf.expand_dims(x[:,:,i],axis=-1) for i in indices])
+                if method=='avg':
+                    return tf.keras.layers.Average()([tf.expand_dims(x[:,:,i],axis=-1) for i in indices])
+                else:
+                    conv_cfg=DEFAULT_CONV_CONFIG.copy()
+                    if isinstance(method,(int,float)):
+                        conv_cfg['filters']=method 
+                    else:
+                        conv_cfg.update(method)
+                    return tf.keras.layers.Conv2D(**conv_cfg)(tf.gather(x,indices,axis=-1))
+        else:
+            raise ValueError('WTF',ndim,x.shape)
+
+
+
+
 
 
 # =========================================================================================

@@ -6,6 +6,9 @@ from tensorflow.python.ops import nn
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import clip_ops
 from tensorflow.python.framework import constant_op
+#
+# CONSTANTS
+#
 EPS=1e-8
 CCE_ARGS=[
     'from_logits',
@@ -13,6 +16,8 @@ CCE_ARGS=[
     'reduction',
     'name'
 ]
+
+
 #
 # CUSTOM LOSS FUNCTIIONS
 #
@@ -38,7 +43,7 @@ def weighted_categorical_crossentropy(weights=None,**kwargs):
             pixel_weights=tf.reduce_sum(weights*target, axis=-1)
             weighted_losses=unweighted_losses*pixel_weights
             return tf.reduce_mean(weighted_losses)
-    return _loss
+        return _loss
 
 
 

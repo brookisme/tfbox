@@ -25,6 +25,8 @@ class Encoder(base.Model):
             file_name=None,
             folder=load.TFBOX,
             nb_classes=None,
+            group_maps=None,
+            group_nb_classes=None,
             from_logits=None,
             add_classifier=None,
             return_empty_skips=False,
@@ -48,6 +50,8 @@ class Encoder(base.Model):
             self.set_classifier(
                 nb_classes,
                 config.get('classifier'),
+                group_maps=group_maps,
+                group_nb_classes=group_nb_classes,
                 folder=folder,
                 from_logits=from_logits)
 
