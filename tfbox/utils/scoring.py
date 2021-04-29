@@ -30,7 +30,6 @@ class ScoreKeeper(object):
                  band_names=[],
                  print_keys=[],
                  band_importance=False):
-        print('HACK-SKIP_BAND_IMPORTANCE',band_importance)
         self.model=model
         self.loader=loader
         self.classes=classes
@@ -99,10 +98,7 @@ class ScoreKeeper(object):
         preds=[tf.argmax(p,axis=-1) for p in preds]
         if self.output_value_map:
             preds=[proc.map_values(p,self.output_value_map) for p in preds]
-        # for i,(targ,pred,row) in enumerate(zip(targs,preds,rows)):
-        if len(targs)>1:
-            print('SCORE FIRST HACK')
-        for i,(targ,pred,row) in enumerate(zip(targs[0],preds[0],rows)):
+        for i,(targ,pred,row) in enumerate(zip(targs,preds,rows)):
             score_data={}
             score_data['batch']=batch
             score_data['image_index']=i

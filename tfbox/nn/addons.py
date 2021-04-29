@@ -18,7 +18,6 @@ DEFAULT_CONV_CONFIG={
 #
 class Swish(tf.keras.layers.Layer):
 
-    
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
 
@@ -44,8 +43,8 @@ class Groups(tf.keras.layers.Layer):
     def call(self, x):
         grouped_list=[self._group(i,m,x) for i,m in enumerate(self.group_maps)]
         return tf.concat(grouped_list,axis=-1)
-    
-    
+
+
     def _group(self,index,gmap,x):
         ndim=len(x.shape)
         if ndim==4:

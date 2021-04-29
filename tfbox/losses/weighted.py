@@ -18,8 +18,6 @@ CCE_ARGS=[
 ]
 
 
-
-
 #
 # CUSTOM LOSS FUNCTIIONS
 #
@@ -35,18 +33,17 @@ def weighted_categorical_crossentropy(weights=None,**kwargs):
         print('WARNING: WCCE called without weights. Defaulting to CCE')
         return losses.CategoricalCrossentropy(**kwargs)
     else:
-        return losses.CategoricalCrossentropy(**kwargs)
-        # if isinstance(weights,list) or isinstance(np.ndarray):
-        #     weights=K.variable(weights)
-        # kwargs['reduction']=tf.keras.losses.Reduction.NONE
-        # print('WCCE:',weights,kwargs)
-        # cce=losses.CategoricalCrossentropy(**kwargs)
-        # def _loss(target,output):
-        #     unweighted_losses=cce(target,output)
-        #     pixel_weights=tf.reduce_sum(weights*target, axis=-1)
-        #     weighted_losses=unweighted_losses*pixel_weights
-        #     return tf.reduce_mean(weighted_losses)
-        # return _loss
+        if isinstance(weights,list) or isinstance(np.ndarray):
+            weights=K.variable(weights)
+        kwargs['reduction']=tf.keras.losses.Reduction.NONE
+        print('WCCE:',weights,kwargs)
+        cce=losses.CategoricalCrossentropy(**kwargs)
+        def _loss(target,output):
+            unweighted_losses=cce(target,output)
+            pixel_weights=tf.reduce_sum(weights*target, axis=-1)
+            weighted_losses=unweighted_losses*pixel_weights
+            return tf.reduce_mean(weighted_losses)
+        return _loss
 
 
 
