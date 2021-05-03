@@ -94,7 +94,7 @@ class ScoreKeeper(object):
             preds=tf.stack([
                 self._get_sum_stack(preds,v) for v 
                 in self.output_reducer_map],axis=-1)
-        if not isinstance(targs,list):
+        if not isinstance(preds,list):
             preds=[preds]
         preds=[tf.argmax(p,axis=-1) for p in preds]
         if self.output_value_map:
