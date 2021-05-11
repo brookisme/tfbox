@@ -33,14 +33,14 @@ def weighted(weights,metric='categorical_accuracy'):
     Return: (weighted) metric instance 
     """
     metric=get(metric)()
-    # return metric
-    def _weighted_metric(y_true,y_pred):
-        sample_weight=tf.reduce_sum(weights*y_true, axis=-1)
-        metric.reset_states()
-        metric.update_state(y_true,y_pred,sample_weight=sample_weight)
-        return metric.result()
-    _weighted_metric.name=f'{metric.name}-w'
-    return _weighted_metric
+    return metric
+    # def _weighted_metric(y_true,y_pred):
+    #     sample_weight=tf.reduce_sum(weights*y_true, axis=-1)
+    #     metric.reset_states()
+    #     metric.update_state(y_true,y_pred,sample_weight=sample_weight)
+    #     return metric.result()
+    # _weighted_metric.name=f'{metric.name}-w'
+    # return _weighted_metric
  
 
 def subset(ignore_labels,labels,metric='categorical_accuracy'):
