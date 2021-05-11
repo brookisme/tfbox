@@ -33,7 +33,6 @@ def weighted(weights,metric='categorical_accuracy'):
     Return: (weighted) metric instance 
     """
     metric=get(metric)()
-    # return metric
     def _weighted_metric(y_true,y_pred):
         sample_weight=tf.reduce_sum(weights*y_true, axis=-1)
         metric.reset_states()

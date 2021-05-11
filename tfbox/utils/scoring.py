@@ -47,6 +47,8 @@ class ScoreKeeper(object):
         elif print_keys:
             self.print_keys=print_keys+[self.metric_name]
         self.scores=None
+        if band_importance:
+            print('WARNING: band_importance not implemented') 
 
 
     def report(self,frac=None,force=False):
@@ -86,46 +88,48 @@ class ScoreKeeper(object):
             rows=[False]*targs.shape[0]
         scores=[]
         importances=[]
-        targs=tf.argmax(targs,axis=-1)
-        # if not isinstance(targs,list):
-        #     targs=[targs]
-        # targs=[tf.argmax(t,axis=-1) for t in targs]
+        if not isinstance(targs,list):
+            targs=[targs]
+        targs=[tf.argmax(t,axis=-1) for t in targs]
         preds=self.model(inpts)
         if self.output_reducer_map:
             preds=tf.stack([
                 self._get_sum_stack(preds,v) for v 
                 in self.output_reducer_map],axis=-1)
-        preds=tf.argmax(preds,axis=-1)
-        # if not isinstance(preds,list):
-        #     preds=[preds]
-        # preds=[tf.argmax(p,axis=-1) for p in preds]
+        if not isinstance(preds,list):
+            preds=[preds]
+        preds=[tf.argmax(p,axis=-1) for p in preds]
         if self.output_value_map:
-            preds=proc.map_values(preds,self.output_value_map)
-            # preds=[proc.map_values(p,self.output_value_map) for p in preds]
-        for i,(targ,pred,row) in enumerate(zip(targs,preds,rows)):
-            score_data={}
-            score_data['batch']=batch
-            score_data['image_index']=i
-            if row is not False:
-                for k in self.row_keys:
-                    score_data[k]=row[k]
-            score_data[self.metric_name]=self.metric(targ,pred).numpy()
-            score_data=self.confusion(targ,pred,data=score_data)
-            scores.append(score_data)
-            self._print_score(score_data,index)
-        if False and self.band_importance:
-            if not self.nb_bands:
-                self.nb_bands=inpts.shape[-1]
-            for b in range(self.nb_bands):
-                rpreds=tf.argmax(self.model(self._randomize(inpts,b)),axis=-1)
-                if self.band_names:
-                    b=self.band_names[b]
-                for j,(targ,rpred) in enumerate(zip(targs,rpreds)):
-                    base_score=scores[j][self.metric_name]
-                    scores[j][f'importance_{b}']=self._importance(
-                        targ,
-                        rpred,
-                        base_score)
+            preds=[proc.map_values(p,self.output_value_map) for p in preds]
+        for (ts,ps) in zip(targs,preds):
+            for i,(targ,pred,row) in enumerate(zip(ts,ps,rows)):
+                score_data={}
+                score_data['batch']=batch
+                score_data['image_index']=i
+                if row is not False:
+                    for k in self.row_keys:
+                        score_data[k]=row[k]
+                score_data[self.metric_name]=self.metric(targ,pred).numpy()
+                score_data=self.confusion(targ,pred,data=score_data)
+                scores.append(score_data)
+                self._print_score(score_data,index)
+        ######################################################################
+        # SKIPING BAND IMPORTANCE:
+        # - need to make sure it works with new multi-headed targs/preds
+        ######################################################################        
+        # if self.band_importance:
+        #     if not self.nb_bands:
+        #         self.nb_bands=inpts.shape[-1]
+        #     for b in range(self.nb_bands):
+        #         rpreds=tf.argmax(self.model(self._randomize(inpts,b)),axis=-1)
+        #         if self.band_names:
+        #             b=self.band_names[b]
+        #         for j,(targ,rpred) in enumerate(zip(targs,rpreds)):
+        #             base_score=scores[j][self.metric_name]
+        #             scores[j][f'importance_{b}']=self._importance(
+        #                 targ,
+        #                 rpred,
+        #                 base_score)
         return scores
 
 
