@@ -86,19 +86,22 @@ class ScoreKeeper(object):
             rows=[False]*targs.shape[0]
         scores=[]
         importances=[]
-        if not isinstance(targs,list):
-            targs=[targs]
-        targs=[tf.argmax(t,axis=-1) for t in targs]
+        targs=tf.argmax(targs,axis=-1)
+        # if not isinstance(targs,list):
+        #     targs=[targs]
+        # targs=[tf.argmax(t,axis=-1) for t in targs]
         preds=self.model(inpts)
         if self.output_reducer_map:
             preds=tf.stack([
                 self._get_sum_stack(preds,v) for v 
                 in self.output_reducer_map],axis=-1)
-        if not isinstance(preds,list):
-            preds=[preds]
-        preds=[tf.argmax(p,axis=-1) for p in preds]
+        preds=tf.argmax(preds,axis=-1)
+        # if not isinstance(preds,list):
+        #     preds=[preds]
+        # preds=[tf.argmax(p,axis=-1) for p in preds]
         if self.output_value_map:
-            preds=[proc.map_values(p,self.output_value_map) for p in preds]
+            preds=proc.map_values(preds,self.output_value_map)
+            # preds=[proc.map_values(p,self.output_value_map) for p in preds]
         for i,(targ,pred,row) in enumerate(zip(targs,preds,rows)):
             score_data={}
             score_data['batch']=batch
