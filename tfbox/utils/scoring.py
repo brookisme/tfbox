@@ -101,11 +101,12 @@ class ScoreKeeper(object):
         preds=[tf.argmax(p,axis=-1) for p in preds]
         if self.output_value_map:
             preds=[proc.map_values(p,self.output_value_map) for p in preds]
-        for (ts,ps) in zip(targs,preds):
+        for head,(ts,ps) in enumerate(zip(targs,preds)):
             for i,(targ,pred,row) in enumerate(zip(ts,ps,rows)):
                 score_data={}
                 score_data['batch']=batch
                 score_data['image_index']=i
+                score_data['head_index']=head
                 if row is not False:
                     for k in self.row_keys:
                         score_data[k]=row[k]
