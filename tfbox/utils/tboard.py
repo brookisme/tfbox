@@ -18,6 +18,8 @@ DESCRIPTION_HIST="""{}
     * {}: 
     {}
 """
+MULTIHEAD_INDEX=0
+
 class SegmentationImageWriter(object):
     
     def __init__(self,
@@ -54,7 +56,11 @@ class SegmentationImageWriter(object):
         data=self.loader[batch_index]
         inpts,targs=data[0],data[1]
         if model:
-            preds=tf.argmax(model(inpts),axis=-1).numpy()
+            preds=model(inpts)
+            if isinstance(preds,list):
+                preds=preds[MULTIHEAD_INDEX]
+                targs=targs[MULTIHEAD_INDEX]
+            preds=tf.argmax(preds,axis=-1).numpy()
             self._save_inputs_targets_predictions(
                 batch_index,
                 inpts,
