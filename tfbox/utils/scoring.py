@@ -26,6 +26,7 @@ class ScoreKeeper(object):
                  output_value_map=False,
                  metric=STRICT_ACCURACY,
                  ignore_label=None,
+                 prediction_grouping=None,
                  row_keys=[],
                  band_names=[],
                  print_keys=[],
@@ -40,6 +41,13 @@ class ScoreKeeper(object):
         self.row_keys=row_keys or []
         self.band_names=band_names or []
         self.nb_bands=len(self.band_names)
+        if prediction_grouping:
+            self.prediction_grouping=prediction_grouping
+            self.out_group=[
+                i for i in range(self.nb_classes) 
+                if i not in prediction_grouping]
+        else:
+            self.prediction_grouping=False
         self.band_importance=band_importance
         self._set_metric(metric,ignore_label)
         if print_keys is True:
@@ -98,7 +106,7 @@ class ScoreKeeper(object):
                 in self.output_reducer_map],axis=-1)
         if not isinstance(preds,list):
             preds=[preds]
-        preds=[tf.argmax(p,axis=-1) for p in preds]
+        preds=[self._prediction_cat(p) for p in preds]
         if self.output_value_map:
             preds=[proc.map_values(p,self.output_value_map) for p in preds]
         for head,(ts,ps) in enumerate(zip(targs,preds)):
@@ -150,6 +158,28 @@ class ScoreKeeper(object):
     #
     # INTERNAL
     #
+    def _prediction_cat(self,pred):
+        if self.prediction_grouping:
+            return self._grouped_argmax(pred)
+        else:
+            return tf.argmax(pred,axis=-1)
+
+
+    def _group_sum(self,arr,group):
+        garr=tf.gather(arr,group,axis=-1)
+        gsum=tf.math.reduce_sum(garr,axis=-1)
+        return garr, gsum
+
+
+    def _grouped_argmax(self,arr):
+        garr, gsum=self._group_sum(arr,self.prediction_grouping)
+        _, ogsum=self._group_sum(arr,self.out_group)
+        amx=tf.argmax(arr,axis=-1)
+        gamx=tf.argmax(garr,axis=-1)
+        gamx=tf.cast(tf.gather(self.prediction_grouping,gamx),'int64')
+        return tf.where(gsum>ogsum, x=gamx,y=amx)
+
+
     def _get_sum_stack(self,tnsr,vals):
         if isinstance(vals,int):
             out=tnsr[:,:,:,vals]
