@@ -27,6 +27,7 @@ class ScoreKeeper(object):
                  metric=STRICT_ACCURACY,
                  ignore_label=None,
                  prediction_grouping=None,
+                 has_prediction_out_group=True,
                  row_keys=[],
                  band_names=[],
                  print_keys=[],
@@ -43,9 +44,11 @@ class ScoreKeeper(object):
         self.nb_bands=len(self.band_names)
         if prediction_grouping:
             self.prediction_grouping=prediction_grouping
-            self.out_group=[
-                i for i in range(self.nb_classes) 
-                if i not in prediction_grouping]
+            self.has_prediction_out_group=has_prediction_out_group
+            if has_prediction_out_group:
+                self.out_group=[
+                    i for i in range(self.nb_classes) 
+                    if i not in prediction_grouping]
         else:
             self.prediction_grouping=False
         self.band_importance=band_importance
@@ -173,11 +176,16 @@ class ScoreKeeper(object):
 
     def _grouped_argmax(self,arr):
         garr, gsum=self._group_sum(arr,self.prediction_grouping)
-        _, ogsum=self._group_sum(arr,self.out_group)
         amx=tf.argmax(arr,axis=-1)
         gamx=tf.argmax(garr,axis=-1)
         gamx=tf.cast(tf.gather(self.prediction_grouping,gamx),'int64')
-        return tf.where(gsum>ogsum, x=gamx,y=amx)
+        if self.has_prediction_out_group:
+            _, ogsum=self._group_sum(arr,self.out_group)
+            return tf.where(gsum>ogsum, x=gamx,y=amx)
+        else:
+            mx=tf.math.reduce_max(arr,axis=-1)
+            return tf.where(gsum>mx, x=gamx,y=amx)
+
 
 
     def _get_sum_stack(self,tnsr,vals):
