@@ -26,6 +26,7 @@ class ScoreKeeper(object):
                  output_value_map=False,
                  metric=STRICT_ACCURACY,
                  ignore_label=None,
+                 has_class_predictions=False,
                  prediction_grouping=None,
                  has_prediction_out_group=True,
                  row_keys=[],
@@ -42,15 +43,14 @@ class ScoreKeeper(object):
         self.row_keys=row_keys or []
         self.band_names=band_names or []
         self.nb_bands=len(self.band_names)
+        self.has_class_predictions=has_class_predictions
+        self.prediction_grouping=prediction_grouping
         if prediction_grouping:
-            self.prediction_grouping=prediction_grouping
             self.has_prediction_out_group=has_prediction_out_group
             if has_prediction_out_group:
                 self.out_group=[
                     i for i in range(self.nb_classes) 
                     if i not in prediction_grouping]
-        else:
-            self.prediction_grouping=False
         self.band_importance=band_importance
         self._set_metric(metric,ignore_label)
         if print_keys is True:
@@ -162,7 +162,9 @@ class ScoreKeeper(object):
     # INTERNAL
     #
     def _prediction_cat(self,pred):
-        if self.prediction_grouping:
+        if self.has_class_predictions:
+            return pred
+        elif self.prediction_grouping:
             return self._grouped_argmax(pred)
         else:
             return tf.argmax(pred,axis=-1)
@@ -185,7 +187,6 @@ class ScoreKeeper(object):
         else:
             mx=tf.math.reduce_max(arr,axis=-1)
             return tf.where(gsum>mx, x=gamx,y=amx)
-
 
 
     def _get_sum_stack(self,tnsr,vals):
