@@ -8,7 +8,7 @@ aspp:
   residual: False
   residual_act: True
   seperable: True
-  batch_norm: True
+  norm: batch
   act: True
   act_config: {}
 

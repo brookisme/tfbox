@@ -71,13 +71,12 @@ class Model(keras.Model):
     def output(self,x):
         if self.classifier:
             x=self.classifier(x)
-        if self.grouping:
-            gx=self.grouping(x)
-            if self.group_classifier:
-                gx=self.group_classifier(gx)
-            return [x, gx]
-        else:
-            return x
+            if self.grouping:
+                gx=self.grouping(x)
+                if self.group_classifier:
+                    gx=self.group_classifier(gx)
+                x=[x, gx]
+        return x
 
 
     def layer_name(self,group=None,index=None):
