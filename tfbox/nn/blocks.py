@@ -178,7 +178,9 @@ class Conv(keras.Model):
     BATCH_NORM='batch'
     GROUP_NORM='group'
     DEFAULT_NORM=BATCH_NORM
-
+    DEFAULT_ORDER=['conv','act','norm','do']
+    ACT_LAST_ORDER=['conv','norm','do','act']
+    RES_ORDER=['norm','act','conv','do']
     #
     # PUBLIC
     #
@@ -196,6 +198,7 @@ class Conv(keras.Model):
             dropout=DEFAULT_DROPOUT,
             dropout_config={},
             act_last=False,
+            order=DEFAULT_ORDER,
             is_skip=False,
             name=None,
             named_layers=True,
@@ -221,23 +224,22 @@ class Conv(keras.Model):
             strides=strides,
             name=self._layer_name(cname),
             **conv_config)
+        self.is_skip=is_skip
+        if order=='res':
+            self.order=Conv.RES_ORDER
+        elif act_last or (order=='act_last'):
+            self.order=Conv.ACT_LAST_ORDER
+        elif isinstance(order,list):
+            self.order=order
+        else:
+            self.order=Conv.DEFAULT_ORDER
         self.norm=self._norm(norm,norm_config)
         self.act=self._activation(act,act_config)
         self.do=self._dropout(dropout,dropout_config)
-        self.act_last=act_last
-        self.is_skip=is_skip
-
-
-    def __call__(self,x,training=False):
-        x=self.conv(x)
-        if self.act_last:
-            if self.norm: x=self.norm(x)
-            if training and self.do: x=self.do(x)
-            if self.act: x=self.act(x)
-        else:
-            if self.act: x=self.act(x)
-            if self.norm: x=self.norm(x)
-            if training and self.do: x=self.do(x)         
+    def __call__(self,x):
+        for m in self.order:
+            l=getattr(self,m)
+            if l: x=l(x)
         return x
 
 
@@ -307,10 +309,13 @@ class Stack(keras.Model):
             squeeze_excitation_ratio=16,
             residual=True,
             residual_act=True,
+            residual_norm=None,
+            residual_norm_config=None,
             seperable_residual=False,
             seperable=False,
             norm=True,
             norm_config={},
+            output_dropout=True,
             act=True,
             act_config={},
             input_dilation_rate=1,
@@ -344,6 +349,7 @@ class Stack(keras.Model):
         self._set_config(
             act,
             output_stride,
+            output_dropout,
             dilation_rate,
             max_pooling,
             seperable=seperable,
@@ -362,6 +368,10 @@ class Stack(keras.Model):
         self.residual=self._residual(
             residual,
             residual_act,
+            residual_norm,
+            residual_norm_config,
+            norm,
+            norm_config,
             self.filters_list[-1],
             output_stride)
         self.stack=self._build_stack(
@@ -417,18 +427,24 @@ class Stack(keras.Model):
     def _set_config(self,
             act,
             output_stride,
+            output_dropout,
             dilation_rate,
             max_pooling,
             seperable,
             seperable_residual,
+            norm,
+            norm_config,
             **shared_config):
         self.act=act
+        self.output_dropout=output_dropout
         self.max_pooling_config=self._max_pooling_config(
             output_stride,
             dilation_rate,
             max_pooling)
         self.seperable=seperable
         self.seperable_residual=seperable_residual
+        self.norm=norm
+        self.norm_config=norm_config
         shared_config['dilation_rate']=dilation_rate
         self.shared_config=shared_config
 
@@ -446,12 +462,27 @@ class Stack(keras.Model):
         return layer_name(self.block_name,name,index=index,named=self.named_layers)
 
 
-    def _residual(self,residual,residual_act,filters,output_stride):
+    def _residual(
+            self,
+            residual,
+            residual_act,
+            residual_norm,
+            residual_config,
+            norm,
+            residual_norm_config,
+            filters,
+            output_stride):
         if residual and (residual!=Stack.IDENTITY):
             if not residual_act:
                 act=False
             else:
                 act=self.act
+            if residual_norm is None:
+                residual_norm=norm
+            if residual_norm_config is None:
+                residual_norm_config=norm_config
+            cfig=self.shared_config.copy()
+            cfig['dropout']=False
             residual=Conv(
                 filters=filters,
                 kernel_size=1,
@@ -460,7 +491,9 @@ class Stack(keras.Model):
                 act=act,
                 name=self._layer_name('residual'),
                 named_layers=self.named_layers,
-                **self.shared_config)
+                norm=residual_norm,
+                norm_config=residual_norm_config,
+                **cfig)
         return residual
 
     
@@ -476,9 +509,12 @@ class Stack(keras.Model):
             dilation_rate=cfig.pop('dilation_rate',1)
             if (i==0):
                 dilation_rate=input_dilation_rate or dilation_rate
-            if (i==last_layer_index) and (not self.max_pooling_config):
-                strides=output_stride or strides
-                dilation_rate=output_dilation_rate or dilation_rate
+            if (i==last_layer_index):
+                if not self.output_dropout:
+                    cfig['dropout']=False
+                if (not self.max_pooling_config):
+                    strides=output_stride or strides
+                    dilation_rate=output_dilation_rate or dilation_rate
             _layers.append(Conv(
                 filters=f,
                 kernel_size=k,
@@ -486,6 +522,8 @@ class Stack(keras.Model):
                 dilation_rate=dilation_rate,
                 seperable=self.seperable,
                 act=self.act,
+                norm=self.norm,
+                norm_config=self.norm_config,
                 name=self._layer_name(self.layers_name,index=i),
                 named_layers=self.named_layers,
                 **cfig))
