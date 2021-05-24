@@ -204,6 +204,7 @@ class Conv(keras.Model):
             named_layers=True,
             **conv_config):
         super(Conv, self).__init__()
+        self.paddings=False
         self.block_name=name or self.name
         self.named_layers=named_layers
         if seperable:
@@ -216,6 +217,17 @@ class Conv(keras.Model):
             strides=1
         if kernel_size in [1,(1,1)]:
             dilation_rate=1
+            if padding.lower() in ['reflect','symmetric']:
+                padding='valid'
+        elif padding and (padding.lower() in ['reflect','symmetric']):
+            self.padding_mode=padding
+            p=int(kernel_size//2)
+            self.paddings=tf.constant([
+                [0,0],
+                [p,p],
+                [p,p],
+                [0,0]])
+            padding='valid'
         self.conv=_conv(
             filters=filters,
             kernel_size=kernel_size,
@@ -239,7 +251,10 @@ class Conv(keras.Model):
     def __call__(self,x):
         for m in self.order:
             l=getattr(self,m)
-            if l: x=l(x)
+            if l: 
+                if (self.paddings is not False) and (m=='conv'):
+                    x=tf.pad(x,self.paddings,self.padding_mode)
+                x=l(x)
         return x
 
 
@@ -307,6 +322,7 @@ class Stack(keras.Model):
             padding='same',
             squeeze_excitation=False,
             squeeze_excitation_ratio=16,
+            channel_squeeze_excitation=False,
             residual=True,
             residual_act=True,
             residual_norm=None,
@@ -363,6 +379,8 @@ class Stack(keras.Model):
             self.se=SqueezeExcitation(
                 filters,
                 ratio=squeeze_excitation_ratio)
+        elif channel_squeeze_excitation:
+            self.se=ChannelSqueezeExcitation(filters)
         else:
             self.se=False
         self.residual=self._residual(
@@ -745,6 +763,21 @@ class SqueezeExcitation(keras.Model):
 
 
 
+class ChannelSqueezeExcitation(keras.Model):
+    """ ChannelSqueezeExcitation
+    """
+
+    def __init__(self,filters,**squeeze_kwargs):
+        super(ChannelSqueezeExcitation, self).__init__()
+        self.squeeze=layers.Conv2D(1,1,activation='sigmoid',**squeeze_kwargs)
+
+
+    def __call__(self,x):
+        y=self.squeeze(x)
+        return layers.multiply([x,y])
+
+
+
 
 class Residual(keras.Model):
     """ Residual
@@ -836,6 +869,18 @@ class ASPP(Group):
 
 
 
+def get_fixed_initializer(value):
+    """
+    Args: 
+        * value(tensor): a tensor to use for initialization
+    """
+    def _fixed_initializer(shape,dtype=None):
+        if shape[-1]!=len(value):
+            raise ValueError('Fixed Initializer: input must match shape',len(out),shape)
+        return value
+    return _fixed_initializer
+
+
 class SegmentClassifier(keras.Model):
     """
     """
@@ -861,6 +906,7 @@ class SegmentClassifier(keras.Model):
             output_act_config={},
             seperable_preclassification=False,
             residual_preclassification=False,
+            bias_class_weights=None,
             name=None,
             named_layers=True,
             **stack_config):
@@ -888,12 +934,24 @@ class SegmentClassifier(keras.Model):
         else:
             self.preclassifier=False
         if filters_list:
+            if bias_class_weights:
+                _=bias_class_weights
+                bias_class_weights=tf.convert_to_tensor(
+                    bias_class_weights,
+                    dtype=tf.dtypes.float32)
+                bias_class_weights=bias_class_weights/tf.reduce_sum(bias_class_weights)
+                bias_class_weights=tf.math.log(bias_class_weights)
+                print('FIXED BIAS INITIALIZER:',_,tf.nn.softmax(bias_class_weights))
+                bias_initializer=get_fixed_initializer(bias_class_weights)
+            else:
+                bias_initializer='zeros'
             self.classifier=Conv(
                     filters=filters_list[-1],
                     kernel_size=kernel_size_list[-1],
                     norm=output_norm,
                     norm_config=output_norm_config,
                     act=False,
+                    bias_initializer=bias_initializer,
                     name=self.block_name,
                     named_layers=self.named_layers)
         else:
