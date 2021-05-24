@@ -876,7 +876,7 @@ def get_fixed_initializer(value):
     """
     def _fixed_initializer(shape,dtype=None):
         if shape[-1]!=len(value):
-            raise ValueError('Fixed Initializer: input must match shape',len(out),shape)
+            raise ValueError('Fixed Initializer: input must match shape',len(value),shape)
         return value
     return _fixed_initializer
 
