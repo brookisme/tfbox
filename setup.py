@@ -40,7 +40,7 @@ setup(
     'pandas',
     'pyyaml',
     'matplotlib',
-    'imagebox>=0.0.0.16'
+    'imagebox>=0.0.0.17'
   ],
   classifiers = [],
   entry_points={
