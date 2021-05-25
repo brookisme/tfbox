@@ -392,6 +392,12 @@ class Stack(keras.Model):
             norm_config,
             self.filters_list[-1],
             output_stride)
+        if self.residual and padding=='valid':
+            self.res_crop=int(kernel_size//2)*len(self.filters_list)
+            if (kernel_size/2)==self.res_crop:
+                raise ValueError('Residuals with valid padding must have odd kernel_size')
+        else:
+            self.res_crop=False
         self.stack=self._build_stack(
             output_stride,
             input_dilation_rate,
@@ -400,10 +406,12 @@ class Stack(keras.Model):
 
 
     def __call__(self,x,training=False,**kwargs):
-        if self.residual==Stack.IDENTITY:
+        if self.residual:
             res=x
-        elif self.residual:
-            res=self.residual(x)
+            if self.residual!=Stack.IDENTITY:
+                if self.res_crop:
+                    res=res[:,self.res_crop:-self.res_crop,self.res_crop:-self.res_crop,:]
+                res=self.residual(res)
         for layer in self.stack:
             x=layer(x)
         if self.se:
@@ -909,6 +917,7 @@ class SegmentClassifier(keras.Model):
             bias_class_weights=None,
             name=None,
             named_layers=True,
+            padding='same',
             **stack_config):
         super(SegmentClassifier, self).__init__()
         self.block_name=name or self.name
@@ -926,6 +935,7 @@ class SegmentClassifier(keras.Model):
             self.preclassifier=Stack(
                 filters_list=filters_list[:-1],
                 kernel_size_list=kernel_size_list[:-1],
+                padding=padding,
                 seperable=seperable_preclassification,
                 residual=residual_preclassification,
                 name=self._layer_name('stack'),
@@ -948,6 +958,7 @@ class SegmentClassifier(keras.Model):
             self.classifier=Conv(
                     filters=filters_list[-1],
                     kernel_size=kernel_size_list[-1],
+                    padding=padding,
                     norm=output_norm,
                     norm_config=output_norm_config,
                     act=False,
