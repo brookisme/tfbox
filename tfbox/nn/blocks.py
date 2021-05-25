@@ -23,7 +23,7 @@ UPSAMPLE_ERROR=(
     'upsample called with scale==1. '
     'Use allow_identity=True to force.'
 )
-
+EPS=1e-8
 #
 # HELPERS
 #
@@ -940,7 +940,7 @@ class SegmentClassifier(keras.Model):
                     bias_class_weights,
                     dtype=tf.dtypes.float32)
                 bias_class_weights=bias_class_weights/tf.reduce_sum(bias_class_weights)
-                bias_class_weights=tf.math.log(bias_class_weights)
+                bias_class_weights=tf.math.log(bias_class_weights+EPS)
                 print('FIXED BIAS INITIALIZER:',_,tf.nn.softmax(bias_class_weights))
                 bias_initializer=get_fixed_initializer(bias_class_weights)
             else:
