@@ -51,6 +51,8 @@ class DFSequence(tf.keras.utils.Sequence):
             onehot=True,
             droplast=False,
             cropping=None,
+            input_cropping=None,
+            target_cropping=None,
             stop_floating=False,
             float_cropping=None,
             group_maps=False,
@@ -88,6 +90,8 @@ class DFSequence(tf.keras.utils.Sequence):
         self.handler=InputTargetHandler(
             input_bands=input_bands,
             cropping=cropping,
+            input_cropping=input_cropping,
+            target_cropping=target_cropping,
             stop_floating=stop_floating,
             float_cropping=float_cropping,
             size=size,
