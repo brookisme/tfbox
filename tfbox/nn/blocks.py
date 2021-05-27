@@ -323,6 +323,8 @@ class Stack(keras.Model):
             squeeze_excitation=False,
             squeeze_excitation_ratio=16,
             channel_squeeze_excitation=False,
+            block_squeeze_excitation=False,
+            block_squeeze_excitation_config={},
             residual=True,
             residual_act=True,
             residual_norm=None,
@@ -381,6 +383,8 @@ class Stack(keras.Model):
                 ratio=squeeze_excitation_ratio)
         elif channel_squeeze_excitation:
             self.se=ChannelSqueezeExcitation(filters)
+        elif block_squeeze_excitation:
+            self.se=BlockSqueezeExcitation(filters,**block_squeeze_excitation_config)
         else:
             self.se=False
         self.residual=self._residual(
@@ -765,6 +769,51 @@ class SqueezeExcitation(keras.Model):
         y=self.expand(y)
         return layers.multiply([x,y])
 
+
+class BlockSqueezeExcitation(keras.Model):
+    """ BlockSqueezeExcitation
+    """
+
+    def __init__(self,filters,ratio=16,pool_type='avg',size=None,grid_size=3):
+        super(BlockSqueezeExcitation, self).__init__()
+        if pool_type in ['avg','max']:
+            self.pool_type=pool_type
+        else:
+            raise ValueError('BlockSqueezeExcitation: pooling must be max or avg')
+        self.grid_size=grid_size
+        self._set_pool_up(size)     
+        self.reduce=layers.Dense(filters//ratio,activation='relu')
+        self.expand=layers.Dense(filters,activation='sigmoid')
+
+
+    def _get_pool_layer(self):
+        if self.pool_type=='avg':
+            return layers.AveragePooling2D
+        elif self.pool_type=='max':
+            return layers.MaxPool2D
+ 
+
+    def _set_pool_up(self,size):
+        if size:
+            _ps=size/self.grid_size
+            self.pool_size=int(_ps)
+            if _ps==self.pool_size:
+                self.pooling=self._get_pool_layer()(self.pool_size,padding='same')
+                self.up=layers.UpSampling2D(self.pool_size)
+            else:
+                raise ValueError('BlockSqueezeExcitation: grid_size/size must an integer')     
+        else:
+            self.pool_size=None
+
+
+    def __call__(self,x,training=False):
+        if not self.pool_size:
+            self._set_pool_up(x.shape[1])  
+        y=self.pooling(x)
+        y=self.reduce(y)
+        y=self.expand(y)
+        y=self.up(y)
+        return layers.multiply([x,y])
 
 
 class ChannelSqueezeExcitation(keras.Model):
