@@ -388,8 +388,6 @@ class Stack(keras.Model):
             residual_act,
             residual_norm,
             residual_norm_config,
-            norm,
-            norm_config,
             self.filters_list[-1],
             output_stride)
         if self.residual and padding=='valid':
@@ -493,8 +491,6 @@ class Stack(keras.Model):
             residual,
             residual_act,
             residual_norm,
-            residual_config,
-            norm,
             residual_norm_config,
             filters,
             output_stride):
@@ -504,9 +500,9 @@ class Stack(keras.Model):
             else:
                 act=self.act
             if residual_norm is None:
-                residual_norm=norm
+                residual_norm=self.norm
             if residual_norm_config is None:
-                residual_norm_config=norm_config
+                residual_norm_config=self.norm_config
             cfig=self.shared_config.copy()
             cfig['dropout']=False
             residual=Conv(

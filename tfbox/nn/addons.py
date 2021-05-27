@@ -96,10 +96,13 @@ class Groups(tf.keras.layers.Layer):
 # =========================================================================================
 #
 #
-# These are copies of TFAddon Classes, in case you are running tf2.1 (which doesn't support tfa)
+# These are copies of TFAddon Classes, in case you are running tf2.1 (which doesn't 
+# support tfa) or other repos for easy inclusion using aiplatform. 
 #
 #
 # =========================================================================================
+
+
 
 class GroupNormalization(tf.keras.layers.Layer):
     """Group normalization layer.
