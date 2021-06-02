@@ -317,6 +317,7 @@ class Conv(keras.Model):
             return dropout
 
 
+
 class XSeparableConv2D(keras.Model):
     """ Xception Style Seperable Conv (pointwise first)
     """
@@ -336,30 +337,47 @@ class XSeparableConv2D(keras.Model):
 class BandMath(keras.Model):
     """ BandMath: Let the model learn band indices
     """
+    DEFAULT_ORDER=['act','norm']
+    BATCH_NORM='batch'
+    GROUP_NORM='group'
+    DEFAULT_NORM=BATCH_NORM
     #
     # PUBLIC
     #
-    def __init__(self,filters,depth=1,act=False,norm=False,name=None,**conv_config):
+    def __init__(self,filters,
+            depth=1,
+            norm=DEFAULT_NORM,
+            norm_config={},
+            act=True,
+            act_config={},
+            conv_act=False,
+            conv_norm=False,
+            name=None,
+            order=DEFAULT_ORDER,
+            **conv_config):
         super(BandMath, self).__init__()
-        name=name or "bmath"
+        self.block_name=name or self.name
         self.numerator_stack=[
             Conv(
                 filters=filters,
                 kernel_size=1,
-                act=act,
-                norm=norm,
-                name=layer_name(f'{name}_n',index=i),
+                act=conv_act,
+                norm=conv_norm,
+                name=layer_name(f'{self.block_name}_n',index=i),
                 **conv_config)
             for i in range(depth)]
         self.denominator_stack=[
             Conv(
                 filters=filters,
                 kernel_size=1,
-                act=act,
-                norm=norm,
-                name=layer_name(f'{name}_d',index=i),
+                act=conv_act,
+                norm=conv_norm,
+                name=layer_name(f'{self.block_name}_d',index=i),
                 **conv_config)
             for i in range(depth)]
+        self.order=order
+        self.norm=self._norm(norm,norm_config)
+        self.act=self._activation(act,act_config)
 
 
     def __call__(self,x):
@@ -369,7 +387,35 @@ class BandMath(keras.Model):
         denominator=x
         for l in self.denominator_stack:
             denominator=l(denominator)
-        return numerator/(denominator+EPS)
+        x=numerator/(denominator+EPS)
+        for m in self.order:
+            l=getattr(self,m)
+            if l: x=l(x)
+        return x
+
+
+    def _norm(self,norm,norm_config):
+        if norm==True:
+            norm=Conv.DEFAULT_NORM
+        if norm==Conv.BATCH_NORM:
+            norm=layers.BatchNormalization(
+                name=layer_name(f'{self.block_name}_bn'),
+                **norm_config)
+        elif norm==Conv.GROUP_NORM:
+            norm=addons.GroupNormalization(
+                name=layer_name(f'{self.block_name}_gn'),
+                **norm_config)
+        elif norm:
+            raise ValueError('only `group` and `batch` norms implemented')
+        else:
+            norm=False
+        return norm      
+
+
+    def _activation(self,act,config):
+        if act:
+            act=get_activation(act,name=layer_name(f'{self.block_name}_act'),**config)
+        return act
 
 
 
