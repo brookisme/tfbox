@@ -185,10 +185,12 @@ class Conv(keras.Model):
     # PUBLIC
     #
     def __init__(self,
-            filters,
+            filters=None,
             kernel_size=3,
             padding='same',
             seperable=False,
+            pointwise_first=False,
+            depthwise=False,
             norm=BATCH_NORM,
             norm_config={},
             act=True,
@@ -207,12 +209,6 @@ class Conv(keras.Model):
         self.paddings=False
         self.block_name=name or self.name
         self.named_layers=named_layers
-        if seperable:
-            _conv=layers.SeparableConv2D
-            cname='sepconv2d'
-        else:
-            _conv=layers.Conv2D
-            cname='conv2d'
         if dilation_rate>1:
             strides=1
         if kernel_size in [1,(1,1)]:
@@ -228,8 +224,10 @@ class Conv(keras.Model):
                 [p,p],
                 [0,0]])
             padding='valid'
+        _conv, cname, filters=self._conv_setup(depthwise,seperable,pointwise_first,filters)
+        if filters:
+            conv_config['filters']=filters
         self.conv=_conv(
-            filters=filters,
             kernel_size=kernel_size,
             padding=padding,
             dilation_rate=dilation_rate,
@@ -248,6 +246,8 @@ class Conv(keras.Model):
         self.norm=self._norm(norm,norm_config)
         self.act=self._activation(act,act_config)
         self.do=self._dropout(dropout,dropout_config)
+
+
     def __call__(self,x):
         for m in self.order:
             l=getattr(self,m)
@@ -261,6 +261,26 @@ class Conv(keras.Model):
     #
     # INTERNAL
     #
+    def _conv_setup(self,depthwise,seperable,pointwise_first,filters):
+        if depthwise:
+            _conv=layers.DepthwiseConv2D
+            cname='depthconv2d'
+            filters=None
+        else:
+            if seperable:
+                if pointwise_first:
+                    _conv=XSeparableConv2D
+                    cname='xsepconv2d'
+                else:
+                    _conv=layers.SeparableConv2D
+                    cname='sepconv2d'
+            else:
+                _conv=layers.Conv2D
+                cname='conv2d'
+        return _conv, cname, filters
+
+
+
     def _layer_name(self,name):
         return layer_name(self.block_name,name,named=self.named_layers)
 
@@ -297,6 +317,24 @@ class Conv(keras.Model):
             return dropout
 
 
+class XSeparableConv2D(keras.Model):
+    """ Conv-Norm-Activation-Dropout
+    """
+    #
+    # PUBLIC
+    #
+    def __init__(self,filters,**conv_config):
+        super(XSeparableConv2D, self).__init__()
+        self.pointwise=layers.Conv2D(filters=filters,kernel_size=1)
+        self.depthwise=layers.DepthwiseConv2D(**conv_config)
+
+    def __call__(self,x):
+        x=self.pointwise(x)
+        return self.depthwise(x)
+
+
+
+
 
 class Stack(keras.Model):
     """ (Res)Stack of Conv Blocks
@@ -331,6 +369,8 @@ class Stack(keras.Model):
             residual_norm_config=None,
             seperable_residual=False,
             seperable=False,
+            pointwise_first=False,
+            depthwise_out=False,
             norm=True,
             norm_config={},
             output_dropout=True,
@@ -372,6 +412,8 @@ class Stack(keras.Model):
             max_pooling,
             seperable=seperable,
             seperable_residual=seperable_residual,
+            depthwise_out=depthwise_out,
+            pointwise_first=pointwise_first,
             norm=norm,
             norm_config=norm_config,
             padding=padding,
@@ -460,6 +502,7 @@ class Stack(keras.Model):
             max_pooling,
             seperable,
             seperable_residual,
+            depthwise_out,
             norm,
             norm_config,
             **shared_config):
@@ -471,6 +514,7 @@ class Stack(keras.Model):
             max_pooling)
         self.seperable=seperable
         self.seperable_residual=seperable_residual
+        self.depthwise_out=depthwise_out
         self.norm=norm
         self.norm_config=norm_config
         shared_config['dilation_rate']=dilation_rate
@@ -535,6 +579,11 @@ class Stack(keras.Model):
             dilation_rate=cfig.pop('dilation_rate',1)
             if (i==0):
                 dilation_rate=input_dilation_rate or dilation_rate
+                seperable=self.seperable
+                depthwise=False
+            elif self.depthwise_out:
+                seperable=False
+                depthwise=True
             if (i==last_layer_index):
                 if not self.output_dropout:
                     cfig['dropout']=False
@@ -546,7 +595,8 @@ class Stack(keras.Model):
                 kernel_size=k,
                 strides=strides,
                 dilation_rate=dilation_rate,
-                seperable=self.seperable,
+                seperable=seperable,
+                depthwise=depthwise,
                 act=self.act,
                 norm=self.norm,
                 norm_config=self.norm_config,
