@@ -318,7 +318,7 @@ class Conv(keras.Model):
 
 
 class XSeparableConv2D(keras.Model):
-    """ Conv-Norm-Activation-Dropout
+    """ Xception Style Seperable Conv (pointwise first)
     """
     #
     # PUBLIC
@@ -333,6 +333,43 @@ class XSeparableConv2D(keras.Model):
         return self.depthwise(x)
 
 
+class BandMath(keras.Model):
+    """ BandMath: Let the model learn band indices
+    """
+    #
+    # PUBLIC
+    #
+    def __init__(self,filters,depth=1,act=False,norm=False,name=None,**conv_config):
+        super(BandMath, self).__init__()
+        name=name or "bmath"
+        self.numerator_stack=[
+            Conv(
+                filters=filters,
+                kernel_size=1,
+                act=act,
+                norm=norm,
+                name=layer_name(f'{name}_n',index=i),
+                **conv_config)
+            for i in range(depth)]
+        self.denominator_stack=[
+            Conv(
+                filters=filters,
+                kernel_size=1,
+                act=act,
+                norm=norm,
+                name=layer_name(f'{name}_d',index=i),
+                **conv_config)
+            for i in range(depth)]
+
+
+    def __call__(self,x):
+        numerator=x
+        for l in self.numerator_stack:
+            numerator=l(numerator)
+        denominator=x
+        for l in self.denominator_stack:
+            denominator=l(denominator)
+        return numerator/(denominator+EPS)
 
 
 
@@ -1140,6 +1177,7 @@ BLOCKS={
     'residual': Residual,
     'squeeze_excitation': SqueezeExcitation,
     'aspp': ASPP,
+    'band_math': BandMath,
     'segment_classifier': SegmentClassifier
 }
 ACTIVATIONS={
