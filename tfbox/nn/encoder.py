@@ -43,7 +43,7 @@ class Encoder(base.Model):
             folder)
         if add_classifier is None:
             add_classifier=config.get('classifier',False)
-        blocks_config=config['blocks_config']
+        blocks_config=config.get('blocks_config',[])
         self.stacked_blocks=[blocks.build_blocks(c) for c in blocks_config]
         self.return_empty_skips=return_empty_skips
         if add_classifier and nb_classes:
