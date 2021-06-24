@@ -33,6 +33,8 @@ class DFSequence(tf.keras.utils.Sequence):
             nb_classes=None,
             batch_size=BATCH_SIZE,
             converters={},
+            means_column=None,
+            stdevs_column=None,
             input_bands=None,
             augment=True,
             shuffle=True,
@@ -76,6 +78,8 @@ class DFSequence(tf.keras.utils.Sequence):
         self._set_columns(
             input_column,
             target_column,
+            means_column,
+            stdevs_column,
             sample_weight_column,
             group_column,
             has_windows,
@@ -181,12 +185,30 @@ class DFSequence(tf.keras.utils.Sequence):
             return inpts, targs
 
     
+    def _dotted_column(self,row,dotcol):
+        parts=dotcol.split('.')
+        col=parts[0]
+        for p in parts[1:]:
+            col=f'{col}_{row[p]}'
+        return col
+
+
     def get_input(self,row=None):
         """ return input image for row or selected-row """
         if row is None:
             row=self.row
+        if self.means_column:
+            means=row[self._dotted_column(row,self.means_column)]
+        else:
+            means=None
+        if self.stdevs_column:
+            stdevs=row[self._dotted_column(row,self.stdevs_column)]
+        else:
+            stdevs=None
         return self.handler.input(
             row[self.input_column],
+            means=None,
+            stdevs=None,
             return_profile=False)
     
     
@@ -241,6 +263,8 @@ class DFSequence(tf.keras.utils.Sequence):
     def _set_columns(self,
             input_column,
             target_column,
+            means_column,
+            stdevs_column,
             sample_weight_column,
             group_column,
             has_windows,
@@ -248,6 +272,8 @@ class DFSequence(tf.keras.utils.Sequence):
             window_column):
         self.input_column=input_column
         self.target_column=target_column
+        self.means_column=means_column
+        self.stdevs_column=stdevs_column
         self.sample_weight_column=sample_weight_column
         self.has_windows=has_windows
         self.window_index_column=window_index_column
