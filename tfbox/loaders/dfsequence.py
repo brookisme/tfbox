@@ -354,12 +354,19 @@ class DFSequence(tf.keras.utils.Sequence):
 
     
     def _localize_path(self,path):
+        # print('PATH',path)
         path=re.sub(REMOTE_HEAD,'',path)
         if isinstance(self.localize,str):
+            # print('PATH1a',path)
             path=path.split(self.localize,1)[-1]
+            # print('PATH1b',path)
         path=re.sub(r'^\/','',path)
+        # print('PATH2',path)
         if self.local_data_root:
             path=f'{self.local_data_root}/{path}'
+            # print('PATH3',path)
+        # print('\n'*10)
+        # raise
         return path
 
 

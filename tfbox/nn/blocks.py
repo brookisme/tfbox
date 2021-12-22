@@ -688,7 +688,6 @@ class Stack(keras.Model):
                 **cfig))
             if (i==last_layer_index) and self.max_pooling_config:
                 _layers.append(layers.MaxPooling2D(
-                    self._layer_name('max_pooling'),
                     **self.max_pooling_config))
         return _layers
 
