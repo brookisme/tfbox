@@ -207,8 +207,8 @@ class DFSequence(tf.keras.utils.Sequence):
             stdevs=None
         return self.handler.input(
             row[self.input_column],
-            means=None,
-            stdevs=None,
+            means=means,
+            stdevs=stdevs,
             return_profile=False)
     
     
