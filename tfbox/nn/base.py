@@ -1,3 +1,4 @@
+from copy import deepcopy
 from pprint import pprint
 import tensorflow.keras as keras
 from . import load
@@ -50,12 +51,18 @@ class Model(keras.Model):
             folder=load.TFBOX,
             from_logits=None):
         if nb_classes:
-            self.classifier=self._get_classifier(
-                nb_classes,
-                config,
-                file_name=file_name,
-                folder=folder,
-                from_logits=from_logits)
+            if not isinstance(nb_classes,list):
+                nb_classes=[nb_classes]
+            self.classifier=[]
+            for n in nb_classes:
+                self.classifier.append(
+                    self._get_classifier(
+                        n,
+                        config,
+                        file_name=file_name,
+                        folder=folder,
+                        from_logits=from_logits))
+
         if group_maps:
             self.grouping=addons.Groups(group_maps)
             self.group_classifier=self._get_classifier(
@@ -70,12 +77,12 @@ class Model(keras.Model):
 
     def output(self,x):
         if self.classifier:
-            x=self.classifier(x)
+            x=[c(x) for c in self.classifier]
             if self.grouping:
                 gx=self.grouping(x)
                 if self.group_classifier:
                     gx=self.group_classifier(gx)
-                x=[x, gx]
+                x=+[gx]
         return x
 
 
@@ -93,6 +100,7 @@ class Model(keras.Model):
             folder=load.TFBOX,
             from_logits=None):
         if config:
+            config=deepcopy(config)
             if from_logits in [True,False]:
                 config=self._update_activation(config,from_logits)
             if nb_classes and config:
