@@ -1,5 +1,6 @@
 import re
 from pprint import pprint
+from copy import deepcopy
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
@@ -141,6 +142,7 @@ def _config_dict(config,btype=None):
             'filters': config,
         }
     else:
+        config=deepcopy(config)
         nb_keys=len(config)
         if nb_keys==1:
             key, value=next(iter(config.items()))
@@ -150,7 +152,7 @@ def _config_dict(config,btype=None):
             else:
                 btype= config.get('btype',btype) or DEFAULT_BTYPE
             config['btype']=btype
-    return config.copy()
+    return config
 
 
 def _valid_key(key):
@@ -692,6 +694,54 @@ class Stack(keras.Model):
         return _layers
 
 
+class Parallel(keras.Model):
+    """ Parallel Configs
+    """
+    #
+    # CONSTANTS
+    #
+    MERGE_TYPE='add'
+    MERGE_TYPES=['add','average']
+
+
+    #
+    # PUBLIC
+    #
+    def __init__(self,
+            blocks_configs,
+            merge_type=MERGE_TYPE):
+        super(Parallel, self).__init__()
+        self.stacks=[]
+        for bcfig in blocks_configs:
+            if isinstance(bcfig,dict):
+                bcfig=bcfig.pop('blocks_config',bcfig)
+            stacked_blocks=[build_blocks(c) for c in bcfig]
+            self.stacks.append(stacked_blocks)
+        self.merge_type=merge_type
+        if self.merge_type not in Parallel.MERGE_TYPES:
+            print (
+                '[WARNING] tfbox.nn.blocks.Parallel: using non-standard merge',
+                self.merge_type
+            )
+
+    def __call__(self,x,training=False,**kwargs):
+        outs=[]
+        for stacked_blocks in self.stacks:
+            outs.append(self._call_stack(stacked_blocks,x))
+        return self._merge(outs)
+
+    def _call_stack(self,stacked_blocks,x):
+        for sb in stacked_blocks:
+            for block in sb:
+                x=block(x)
+        return x
+
+    def _merge(self,outputs):
+        if len(outputs)>1:
+            return getattr(layers,self.merge_type)(outputs)
+        else:
+            return outputs[0]
+
 
 
 
@@ -1218,6 +1268,7 @@ BLOCKS={
     'conv': Conv,
     'stack': Stack,
     'group': Group,
+    'parallel': Parallel,
     'groups': addons.Groups,
     'residual': Residual,
     'squeeze_excitation': SqueezeExcitation,

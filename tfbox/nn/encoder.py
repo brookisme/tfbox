@@ -1,7 +1,10 @@
 from pprint import pprint
+from copy import deepcopy
 from . import load
 from . import base
 from . import blocks
+
+
 #
 # CONSTANTS
 #
@@ -38,7 +41,7 @@ class Encoder(base.Model):
             named_layers=named_layers,
             noisy=noisy)
         config=load.config(
-            config,
+            deepcopy(config),
             file_name or Encoder.NAME,
             folder)
         if add_classifier is None:
@@ -61,6 +64,9 @@ class Encoder(base.Model):
         skips=[]
         for sb in self.stacked_blocks:
             for block in sb:
+                #
+                # SHOULD XIN HAVE BEEN PASSED TO UPDATE_SKIPS?
+                #
                 xin=x
                 x=block(x)
                 skips=self._update_skips(block,skips,x)
