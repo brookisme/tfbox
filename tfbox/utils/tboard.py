@@ -18,8 +18,6 @@ DESCRIPTION_HIST="""{}
     * {}: 
     {}
 """
-MULTIHEAD_INDEX=0
-
 class SegmentationImageWriter(object):
     
     def __init__(self,
@@ -33,7 +31,10 @@ class SegmentationImageWriter(object):
             ax_h=4,
             ax_w=None,
             ax_delta=0.2,
-            preserve_epoch=None):
+            preserve_epoch=None,
+            multioutput_rep_index=False):
+        if isinstance(vmax,list):
+            vmax=vmax[multioutput_rep_index or -1]
         if not target_colors:
             target_colors=h.COLORS[:vmax]
         self.input_bands=input_bands
@@ -48,6 +49,7 @@ class SegmentationImageWriter(object):
         self.file_writer=tf.summary.create_file_writer(data_dir)
         self.loader=loader
         self.model=model
+        self.multioutput_rep_index=multioutput_rep_index
         
         
     def write_batch(self,batch_index,epoch=None,model=True):
@@ -57,9 +59,9 @@ class SegmentationImageWriter(object):
         inpts,targs=data[0],data[1]
         if model:
             preds=model(inpts)
-            if isinstance(preds,list):
-                preds=preds[MULTIHEAD_INDEX]
-                targs=targs[MULTIHEAD_INDEX]
+            if isinstance(targs,list):
+                preds=preds[self.multioutput_rep_index]
+                targs=targs[self.multioutput_rep_index]
             preds=tf.argmax(preds,axis=-1).numpy()
             self._save_inputs_targets_predictions(
                 batch_index,

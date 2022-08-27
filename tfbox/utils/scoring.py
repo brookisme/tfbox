@@ -32,10 +32,17 @@ class ScoreKeeper(object):
                  row_keys=[],
                  band_names=[],
                  print_keys=[],
-                 band_importance=False):
+                 band_importance=False,
+                 multioutput_rep_index=None):
+        if (multioutput_rep_index is not None): 
+            if isinstance(classes,list):
+                classes=classes[multioutput_rep_index]
+            if isinstance(nb_classes,list):
+                nb_classes=nb_classes[multioutput_rep_index]
         self.model=model
         self.loader=loader
         self.classes=classes
+        self.multioutput_rep_index=multioutput_rep_index
         self.output_value_map=output_value_map
         self.output_reducer_map=output_reducer_map
         self.max_class_value=max(classes.keys())
@@ -103,12 +110,17 @@ class ScoreKeeper(object):
             targs=[targs]
         targs=[tf.argmax(t,axis=-1) for t in targs]
         preds=self.model(inpts)
+        if (self.multioutput_rep_index is not None) and isinstance(targs,list):
+            targs=targs[self.multioutput_rep_index]
+            preds=preds[self.multioutput_rep_index]
         if self.output_reducer_map:
             preds=tf.stack([
                 self._get_sum_stack(preds,v) for v 
                 in self.output_reducer_map],axis=-1)
         if not isinstance(preds,list):
             preds=[preds]
+        if not isinstance(targs,list):
+            targs=[targs]
         preds=[self._prediction_cat(p) for p in preds]
         if self.output_value_map:
             preds=[proc.map_values(p,self.output_value_map) for p in preds]
@@ -146,6 +158,7 @@ class ScoreKeeper(object):
 
 
     def confusion(self,targ,pred,data={}):
+        print(targ.shape,pred.shape,self.nb_classes)
         cm=tf.math.confusion_matrix(
             tf.reshape(targ,[-1]),
             tf.reshape(pred,[-1]),

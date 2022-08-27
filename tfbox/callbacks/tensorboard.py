@@ -21,6 +21,7 @@ class TBSegmentationImages(keras.callbacks.Callback):
             ax_w=None,
             ax_delta=0.2,
             preserve_epoch=5,
+            multioutput_rep_index=False,
             sample_batch_indices=None,
             sample_batch_index=0):
         super(TBSegmentationImages,self).__init__()
@@ -36,7 +37,8 @@ class TBSegmentationImages(keras.callbacks.Callback):
             ax_h=ax_h,
             ax_w=ax_w,
             ax_delta=ax_delta,
-            preserve_epoch=preserve_epoch)
+            preserve_epoch=preserve_epoch,
+            multioutput_rep_index=multioutput_rep_index)
 
 
     def on_epoch_end(self, epoch, logs={}):

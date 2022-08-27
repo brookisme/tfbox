@@ -69,6 +69,7 @@ class DFSequence(tf.keras.utils.Sequence):
             self.nb_classes=nb_classes
         else:
             raise ValueError('onehot encoding requires nb_classes')
+        self.nb_classes_list=isinstance(self.nb_classes,list)
         self.batch_size=batch_size
         self.shuffle=shuffle
         if read_from_gcs:
@@ -175,7 +176,10 @@ class DFSequence(tf.keras.utils.Sequence):
             inpts.append(self.get_input(r))
             targs.append(self.get_target(r))
         inpts=np.array(inpts)
-        targs=np.array(targs)
+        if self.nb_classes_list:
+            targs=[np.array(a) for a in list(zip(*targs))]
+        else:
+            targs=np.array(targs)
         if self.grouping:
             targs=[targs,self.grouping(targs)]
         if self.sample_weight_column:
@@ -313,15 +317,14 @@ class DFSequence(tf.keras.utils.Sequence):
         
 
     def _onehot(self,targ):
-        if isinstance(targ,list):
-            return [self._to_onehot(t) for t in targ]
+        if self.nb_classes_list:
+            return [self._to_onehot(t,n) for (t,n) in zip(targ,self.nb_classes)]
         else:
-            return self._to_onehot(targ)
+            return self._to_onehot(targ,self.nb_classes)
 
 
-    def _to_onehot(self,targ):
-        targ=to_categorical(targ,num_classes=self.nb_classes)
-        ndim=targ.ndim
+    def _to_onehot(self,targ,nb_classes):
+        targ=to_categorical(targ,num_classes=nb_classes)
         if self.droplast:
             targ=targ[:,:,:-1]
         return targ
@@ -354,19 +357,12 @@ class DFSequence(tf.keras.utils.Sequence):
 
     
     def _localize_path(self,path):
-        # print('PATH',path)
         path=re.sub(REMOTE_HEAD,'',path)
         if isinstance(self.localize,str):
-            # print('PATH1a',path)
             path=path.split(self.localize,1)[-1]
-            # print('PATH1b',path)
         path=re.sub(r'^\/','',path)
-        # print('PATH2',path)
         if self.local_data_root:
             path=f'{self.local_data_root}/{path}'
-            # print('PATH3',path)
-        # print('\n'*10)
-        # raise
         return path
 
 
