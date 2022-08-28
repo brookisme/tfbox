@@ -158,7 +158,6 @@ class ScoreKeeper(object):
 
 
     def confusion(self,targ,pred,data={}):
-        print(targ.shape,pred.shape,self.nb_classes)
         cm=tf.math.confusion_matrix(
             tf.reshape(targ,[-1]),
             tf.reshape(pred,[-1]),
