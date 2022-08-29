@@ -11,6 +11,7 @@ from . import helpers as h
 #
 INPUT_BANDS=[0]
 DESCRIPTION_HEAD="""
+    {}
     * batch_index: {}
     * image_index: {}
 """
@@ -32,6 +33,7 @@ class SegmentationImageWriter(object):
             ax_w=None,
             ax_delta=0.2,
             preserve_epoch=None,
+            label_property=None,
             multioutput_rep_index=False):
         if isinstance(vmax,list):
             vmax=vmax[multioutput_rep_index or -1]
@@ -48,6 +50,7 @@ class SegmentationImageWriter(object):
         self.preserve_epoch=preserve_epoch
         self.file_writer=tf.summary.create_file_writer(data_dir)
         self.loader=loader
+        self.label_property=label_property
         self.model=model
         self.multioutput_rep_index=multioutput_rep_index
         
@@ -57,42 +60,59 @@ class SegmentationImageWriter(object):
             model=self.model
         data=self.loader[batch_index]
         inpts,targs=data[0],data[1]
+        if (self.label_property):
+            labels=[r[self.label_property] for r in self.loader.batch_rows]
+        else:
+            labels=[None]*len(inpts)
         if model:
             preds=model(inpts)
-            if isinstance(targs,list):
-                preds=preds[self.multioutput_rep_index]
-                targs=targs[self.multioutput_rep_index]
-            preds=tf.argmax(preds,axis=-1).numpy()
-            self._save_inputs_targets_predictions(
-                batch_index,
-                inpts,
-                targs,
-                preds,
-                epoch)
+            if isinstance(targs,list): 
+                if (self.multioutput_rep_index is not None):
+                    preds=[preds[self.multioutput_rep_index]]
+                    targs=[targs[self.multioutput_rep_index]]
+            else:
+                preds=[preds]
+                targs=[targs]               
+            has_out_index=len(targs)>1
+            for o,(p,t) in enumerate(zip(preds,targs)):
+                if has_out_index:
+                    out_index=o
+                else:
+                    out_index=False
+                p=tf.argmax(p,axis=-1).numpy()
+                self._save_inputs_targets_predictions(
+                    out_index,
+                    batch_index,
+                    inpts,
+                    t,p,
+                    epoch,
+                    labels)
         else:
-            self._save_inputs_targets(batch_index,inpts,targs,epoch)
-            
-    
-    def _save_images(self,batch_index,inpts,targs,epoch=None):
-        for i,(inpt,targ) in enumerate(zip(inpts,targs)):
-            inpt,targ=self._process_input_target(inpt,targ)
-            figim=self._get_figure_image(inpt,targ)
-            targ_hist=self._get_hist(targ)
-            self._save_figue_image(batch_index,i,figim,epoch,target_hist=targ_hist)
+            raise NotImplementedError('SegmentationImageWriter._save_inputs_targets')
 
         
-    def _save_inputs_targets_predictions(self,batch_index,inpts,targs,preds,epoch):
-        for i,(inpt,targ,pred) in enumerate(zip(inpts,targs,preds)):
+    def _save_inputs_targets_predictions(
+            self,
+            out_index,
+            batch_index,
+            inpts,
+            targs,
+            preds,
+            epoch,
+            labels):
+        for i,(inpt,targ,pred,label) in enumerate(zip(inpts,targs,preds,labels)):
             inpt,targ=self._process_input_target(inpt,targ)
             pred=self._process_prediction(pred)
             figim=self._get_figure_image(inpt,targ,pred)
             targ_hist=self._get_hist(targ)
             pred_hist=self._get_hist(pred)
             self._save_figue_image(
+                out_index,
                 batch_index,
                 i,
                 figim,
-                epoch,
+                epoch=epoch,
+                label=label,
                 target_hist=targ_hist,
                 prediction_hist=pred_hist)
             
@@ -138,23 +158,26 @@ class SegmentationImageWriter(object):
 
     
     def _save_figue_image(self,
+            out_index,
             batch_index,
             image_index,
             image,
             epoch=None,
+            label=None,
             target_hist=None,
             prediction_hist=None):
-        if self.preserve_epoch and epoch and (not (epoch%self.preserve_epoch)):
-            name=f'epoch_{epoch}: batch_{batch_index}-image_{image_index}'
-        else:
-            name=f'batch_{batch_index}-image_{image_index}'
-        description=DESCRIPTION_HEAD.format(batch_index,image_index)       
+        name=f'im_{image_index}'
+        if label:
+            name=f'{name} - {label}'
+        if out_index is not False:
+            name=f'{name} [{out_index}]'
+        description=DESCRIPTION_HEAD.format(label or "",batch_index,image_index)       
         if target_hist:
             description=DESCRIPTION_HIST.format(description,'target',target_hist)
         if prediction_hist:
             description=DESCRIPTION_HIST.format(description,'prediction',prediction_hist)
         with self.file_writer.as_default():
-            tf.summary.image(name,image,step=0,description=description)
+            tf.summary.image(name,image,step=epoch,description=description)
 
 
 
