@@ -45,6 +45,7 @@ class Model(keras.Model):
     def set_classifier(self,
             nb_classes,
             config,
+            classifier_names=None,
             group_maps=None,
             group_nb_classes=None,
             file_name='classifier',
@@ -53,12 +54,15 @@ class Model(keras.Model):
         if nb_classes:
             if not isinstance(nb_classes,list):
                 nb_classes=[nb_classes]
+            if not classifier_names:
+                classifier_names=[None]*len(nb_classes)
             self.classifier=[]
-            for n in nb_classes:
+            for n,cname in zip(nb_classes,classifier_names):
                 self.classifier.append(
                     self._get_classifier(
                         n,
                         config,
+                        classifier_name=cname,
                         file_name=file_name,
                         folder=folder,
                         from_logits=from_logits))
@@ -96,11 +100,13 @@ class Model(keras.Model):
     def _get_classifier(self,
             nb_classes,
             config,
+            classifier_name=None,
             file_name='classifier',
             folder=load.TFBOX,
             from_logits=None):
         if config:
             config=deepcopy(config)
+            config['name']=classifier_name or config.get('name')
             if from_logits in [True,False]:
                 config=self._update_activation(config,from_logits)
             if nb_classes and config:
