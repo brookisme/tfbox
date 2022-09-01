@@ -6,6 +6,7 @@ from tensorflow.python.ops import nn
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import clip_ops
 from tensorflow.python.framework import constant_op
+import numpy as np
 #
 # CONSTANTS
 #
