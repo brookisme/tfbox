@@ -27,6 +27,7 @@ class ScoreKeeper(object):
                  metric=STRICT_ACCURACY,
                  ignore_label=None,
                  has_class_predictions=False,
+                 class_prediction_index=None,
                  prediction_grouping=None,
                  has_prediction_out_group=True,
                  row_keys=[],
@@ -51,6 +52,7 @@ class ScoreKeeper(object):
         self.band_names=band_names or []
         self.nb_bands=len(self.band_names)
         self.has_class_predictions=has_class_predictions
+        self.class_prediction_index=class_prediction_index
         self.prediction_grouping=prediction_grouping
         if prediction_grouping:
             self.has_prediction_out_group=has_prediction_out_group
@@ -110,6 +112,7 @@ class ScoreKeeper(object):
             targs=[targs]
         targs=[tf.argmax(t,axis=-1) for t in targs]
         preds=self.model(inpts)
+
         if (self.multioutput_rep_index is not None) and isinstance(targs,list):
             targs=targs[self.multioutput_rep_index]
             preds=preds[self.multioutput_rep_index]
@@ -175,7 +178,11 @@ class ScoreKeeper(object):
     #
     def _prediction_cat(self,pred):
         if self.has_class_predictions:
-            return pred
+            pred=tf.cast(pred,dtype=tf.int64)
+            if self.class_prediction_index is None:
+                return pred
+            else:
+                return pred[:,:,:,self.class_prediction_index]             
         elif self.prediction_grouping:
             return self._grouped_argmax(pred)
         else:
